@@ -6,27 +6,27 @@ use actix_web::{server, App, HttpRequest};
 use questionnaire_rs::*;
 use models::*;
 use diesel::prelude::*;
+use std::fmt::Write;
 
-//fn index(_req: &HttpRequest) -> &'static str {
-//    "Hello world!"
-//}
-
-fn main() {
-//    use self::schema::question::dsl::*;
+fn index(_req: &HttpRequest) -> String {
+    use self::schema::question::dsl::*;
 
     let connection = establish_connection();
+    let mut output = String::new();
 
-    let results = schema::question::table.load::<Question>(&connection)
+    let results = question.load::<Question>(&connection)
         .expect("Error loading questions");
 
-
-    for question in results {
-        println!("{}", question.title);
-        println!("{}", question.created);
+    for row in results {
+        write!(&mut output, "{}\n{}\n", row.title, row.created);
     }
 
-//    server::new(|| App::new().resource("/", |r| r.f(index)))
-//        .bind("127.0.0.1:8088")
-//        .unwrap()
-//        .run();
+    output
+}
+
+fn main() {
+    server::new(|| App::new().resource("/", |r| r.f(index)))
+        .bind("127.0.0.1:8088")
+        .unwrap()
+        .run();
 }
