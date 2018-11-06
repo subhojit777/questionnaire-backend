@@ -26,7 +26,7 @@ fn index(_req: &HttpRequest) -> String {
 
 fn submit_answer(answer: Json<Answer>) -> HttpResponse {
     println!("{:?}", answer);
-    HttpResponse::Ok().json(answer.title.to_owned())
+    HttpResponse::Ok().finish()
 }
 
 fn main() {

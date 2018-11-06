@@ -1,5 +1,6 @@
 CREATE TABLE answers (
-  id INT PRIMARY KEY,
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  uuid VARCHAR(255) NOT NULL,
   question_id INT NOT NULL,
   title VARCHAR(255) NOT NULL,
   user_id INT NOT NULL,

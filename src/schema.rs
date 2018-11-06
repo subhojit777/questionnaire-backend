@@ -1,6 +1,7 @@
 table! {
     answers (id) {
         id -> Integer,
+        uuid -> Varchar,
         question_id -> Integer,
         title -> Varchar,
         user_id -> Integer,
@@ -11,6 +12,7 @@ table! {
 table! {
     question (id) {
         id -> Integer,
+        uuid -> Varchar,
         title -> Varchar,
         created -> Integer,
     }
