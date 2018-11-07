@@ -6,6 +6,7 @@ extern crate serde_derive;
 
 pub mod schema;
 pub mod models;
+pub mod answers;
 
 use diesel::prelude::*;
 use diesel::mysql::MysqlConnection;

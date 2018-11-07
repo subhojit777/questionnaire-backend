@@ -2,7 +2,7 @@ extern crate actix_web;
 extern crate questionnaire_rs;
 extern crate diesel;
 
-use actix_web::{server, App, HttpRequest, HttpResponse, Json, http::Method};
+use actix_web::{server, App, HttpRequest, http::Method};
 use questionnaire_rs::*;
 use models::*;
 use diesel::prelude::*;
@@ -26,25 +26,11 @@ fn get(_req: &HttpRequest) -> String {
     output
 }
 
-fn answer_post(answer: Json<AnswerForm>) -> HttpResponse {
-    use schema::answers::dsl::*;
-
-    // TODO: Connection should be established only once. Not per function.
-    let connection = establish_connection();
-
-    diesel::insert_into(answers)
-        .values(&answer.into_inner())
-        .execute(&connection)
-        .expect("Error saving the answer");
-
-    HttpResponse::Ok().finish()
-}
-
 fn main() {
     // TODO: URL should come from environment variable.
     server::new(|| App::new()
         .resource("/", |r| r.method(Method::GET).f(get))
-        .resource("/answers", |r| r.method(Method::POST).with(answer_post)))
+        .resource("/answers", |r| r.method(Method::POST).with(questionnaire_rs::answers::post)))
         .bind("127.0.0.1:8088")
         .unwrap()
         .run();
