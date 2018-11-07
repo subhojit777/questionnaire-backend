@@ -1,11 +1,12 @@
 use serde_derive::*;
 use chrono::NaiveDateTime;
 use schema::answers;
+use diesel::Queryable;
+use diesel::Insertable;
 
 #[derive(Queryable)]
 pub struct Question {
     pub id: i32,
-    pub uuid: String,
     pub title: String,
     pub created: NaiveDateTime,
 }
@@ -13,7 +14,6 @@ pub struct Question {
 #[derive(Queryable)]
 pub struct Answer {
     pub id: i32,
-    pub uuid: String,
     pub question_id: i32,
     pub title: String,
     pub user_id: i32,
