@@ -8,7 +8,7 @@ use models::*;
 use diesel::prelude::*;
 use std::fmt::Write;
 
-fn index(_req: &HttpRequest) -> String {
+fn get(_req: &HttpRequest) -> String {
     // TODO: Re-implement this. Check the original app for the home page content.
     use self::schema::question::dsl::*;
 
@@ -43,7 +43,7 @@ fn answer_post(answer: Json<AnswerForm>) -> HttpResponse {
 fn main() {
     // TODO: URL should come from environment variable.
     server::new(|| App::new()
-        .resource("/", |r| r.method(Method::GET).f(index))
+        .resource("/", |r| r.method(Method::GET).f(get))
         .resource("/answers", |r| r.method(Method::POST).with(answer_post)))
         .bind("127.0.0.1:8088")
         .unwrap()
