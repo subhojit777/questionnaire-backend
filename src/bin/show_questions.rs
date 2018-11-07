@@ -25,6 +25,15 @@ fn index(_req: &HttpRequest) -> String {
 }
 
 fn submit_answer(answer: Json<AnswerForm>) -> HttpResponse {
+    use schema::answers::dsl::*;
+
+    let connection = establish_connection();
+
+    diesel::insert_into(answers)
+        .values(&answer.into_inner())
+        .execute(&connection)
+        .expect("Error saving the answer");
+
     HttpResponse::Ok().finish()
 }
 
