@@ -5,7 +5,7 @@ table! {
         question_id -> Integer,
         title -> Varchar,
         user_id -> Integer,
-        created -> Integer,
+        created -> Timestamp,
     }
 }
 
@@ -14,7 +14,7 @@ table! {
         id -> Integer,
         uuid -> Varchar,
         title -> Varchar,
-        created -> Integer,
+        created -> Timestamp,
     }
 }
 

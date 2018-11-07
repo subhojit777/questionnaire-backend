@@ -24,8 +24,7 @@ fn index(_req: &HttpRequest) -> String {
     output
 }
 
-fn submit_answer(answer: Json<Answer>) -> HttpResponse {
-    println!("{:?}", answer);
+fn submit_answer(answer: Json<AnswerForm>) -> HttpResponse {
     HttpResponse::Ok().finish()
 }
 

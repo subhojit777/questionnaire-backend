@@ -1,19 +1,29 @@
 use serde_derive::*;
+use chrono::NaiveDateTime;
+use schema::answers;
 
 #[derive(Queryable)]
 pub struct Question {
     pub id: i32,
     pub uuid: String,
     pub title: String,
-    pub created: i32,
+    pub created: NaiveDateTime,
 }
 
-#[derive(Deserialize, Queryable, Serialize, Debug)]
+#[derive(Queryable)]
 pub struct Answer {
     pub id: i32,
     pub uuid: String,
     pub question_id: i32,
     pub title: String,
     pub user_id: i32,
-    pub created: i32,
+    pub created: NaiveDateTime,
+}
+
+#[derive(Deserialize, Insertable)]
+#[table_name = "answers"]
+pub struct AnswerForm {
+    pub question_id: i32,
+    pub title: String,
+    pub user_id: i32,
 }
