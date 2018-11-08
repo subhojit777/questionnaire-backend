@@ -2,9 +2,9 @@ extern crate actix_web;
 extern crate diesel;
 extern crate serde_json;
 
-use models::{AnswerForm, Answer};
-use self::actix_web::{Json, HttpResponse};
+use self::actix_web::{HttpResponse, Json};
 use diesel::prelude::*;
+use models::{Answer, AnswerForm};
 
 pub fn post(answer_form: Json<AnswerForm>) -> HttpResponse {
     use schema::answers::dsl::{answers, question_id, title, user_id};
@@ -18,7 +18,7 @@ pub fn post(answer_form: Json<AnswerForm>) -> HttpResponse {
         .execute(&connection)
         .expect("Error saving the answer_form");
 
-    let result :Answer = answers
+    let result: Answer = answers
         .filter(question_id.eq(&answer.question_id))
         .filter(title.eq(&answer.title))
         .filter(user_id.eq(&answer.user_id))

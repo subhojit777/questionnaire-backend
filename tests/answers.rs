@@ -1,9 +1,9 @@
-extern crate questionnaire_rs;
 extern crate actix_web;
+extern crate questionnaire_rs;
 extern crate serde_json;
 
-use questionnaire_rs::models::{AnswerForm, Answer};
 use actix_web::{http::Method, test::TestServer, HttpMessage};
+use questionnaire_rs::models::{Answer, AnswerForm};
 use std::str;
 
 #[test]
@@ -15,7 +15,10 @@ fn post() {
         title: String::from("Some answer"),
         user_id: 1,
     };
-    let request = server.client(Method::POST, "/answers").json(answer_form).unwrap();
+    let request = server
+        .client(Method::POST, "/answers")
+        .json(answer_form)
+        .unwrap();
     let response = server.execute(request.send()).unwrap();
 
     let bytes = server.execute(response.body()).unwrap();

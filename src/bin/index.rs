@@ -1,8 +1,8 @@
 extern crate actix_web;
-extern crate questionnaire_rs;
 extern crate diesel;
+extern crate questionnaire_rs;
 
-use actix_web::{server};
+use actix_web::server;
 use questionnaire_rs::*;
 
 fn main() {

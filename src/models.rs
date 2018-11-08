@@ -1,8 +1,8 @@
-use serde_derive::*;
 use chrono::NaiveDateTime;
-use schema::answers;
-use diesel::Queryable;
 use diesel::Insertable;
+use diesel::Queryable;
+use schema::answers;
+use serde_derive::*;
 
 #[derive(Queryable)]
 pub struct Question {
