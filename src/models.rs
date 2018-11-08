@@ -11,7 +11,7 @@ pub struct Question {
     pub created: NaiveDateTime,
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Serialize)]
 pub struct Answer {
     pub id: i32,
     pub question_id: i32,

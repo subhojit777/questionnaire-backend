@@ -5,16 +5,16 @@ extern crate dotenv;
 extern crate serde_derive;
 extern crate actix_web;
 
-pub mod schema;
-pub mod models;
-pub mod answers;
-pub mod index;
-
 use diesel::prelude::*;
 use diesel::mysql::MysqlConnection;
 use dotenv::dotenv;
 use std::env;
 use actix_web::{App, http::Method};
+
+pub mod schema;
+pub mod models;
+pub mod answers;
+pub mod index;
 
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();
