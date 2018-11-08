@@ -1,5 +1,6 @@
 extern crate actix_web;
 extern crate diesel;
+extern crate serde_json;
 
 use models::{AnswerForm, Answer};
 use self::actix_web::{Json, HttpResponse};
@@ -25,12 +26,4 @@ pub fn post(answer_form: Json<AnswerForm>) -> HttpResponse {
         .unwrap();
 
     HttpResponse::Ok().json(result)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_post() {
-        unimplemented!();
-    }
 }
