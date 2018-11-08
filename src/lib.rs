@@ -3,15 +3,18 @@ extern crate chrono;
 extern crate diesel;
 extern crate dotenv;
 extern crate serde_derive;
+extern crate actix_web;
 
 pub mod schema;
 pub mod models;
 pub mod answers;
+pub mod index;
 
 use diesel::prelude::*;
 use diesel::mysql::MysqlConnection;
 use dotenv::dotenv;
 use std::env;
+use actix_web::{App, http::Method};
 
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();
@@ -20,4 +23,10 @@ pub fn establish_connection() -> MysqlConnection {
         .expect("DATABASE_URL must be set.");
     MysqlConnection::establish(&database_url)
         .expect(&format!("Error connecting to {}", database_url))
+}
+
+pub fn create_app() -> App {
+    App::new()
+        .resource("/", |r| r.method(Method::GET).f(index::get))
+        .resource("/answers", |r| r.method(Method::POST).with(answers::post))
 }
