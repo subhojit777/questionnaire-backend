@@ -3,10 +3,14 @@ extern crate diesel;
 
 use actix_web::HttpRequest;
 use diesel::prelude::*;
+use diesel::r2d2::{ConnectionManager, Pool};
 use models::Question;
 use std::fmt::Write;
+use crate::AppState;
 
-pub fn get(_req: &HttpRequest) -> String {
+pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
+
+pub fn get(_req: &HttpRequest<AppState>) -> String {
     // TODO: Re-implement this. Check the original app for the home page content.
     use schema::question::dsl::*;
 

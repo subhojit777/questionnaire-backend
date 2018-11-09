@@ -1,8 +1,9 @@
-extern crate actix_web;
 extern crate diesel;
 extern crate serde_json;
 
-use self::actix_web::{HttpResponse, Json};
+use actix_web::actix::Message;
+use actix_web::error::Error;
+use actix_web::{HttpResponse, Json};
 use diesel::prelude::*;
 use models::{Answer, AnswerForm};
 
@@ -26,4 +27,8 @@ pub fn post(answer_form: Json<AnswerForm>) -> HttpResponse {
         .unwrap();
 
     HttpResponse::Ok().json(result)
+}
+
+impl Message for AnswerForm {
+    type Result = Result<Answer, Error>;
 }
