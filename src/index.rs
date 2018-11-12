@@ -1,6 +1,3 @@
-extern crate actix_web;
-extern crate diesel;
-
 use actix_web::HttpRequest;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};

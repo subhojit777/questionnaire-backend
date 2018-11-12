@@ -1,9 +1,11 @@
 extern crate chrono;
+extern crate serde_json;
 #[macro_use]
 extern crate diesel;
 extern crate actix_web;
 extern crate dotenv;
 extern crate serde_derive;
+extern crate futures;
 
 use actix_web::{http::Method, App, actix::{Actor, SyncContext, Addr, SyncArbiter}};
 use diesel::{prelude::*, mysql::MysqlConnection, r2d2::{ConnectionManager, Pool}};
@@ -22,7 +24,7 @@ impl Actor for DbExecutor {
 }
 
 pub struct AppState {
-        db: Addr<DbExecutor>,
+    db: Addr<DbExecutor>,
 }
 
 pub fn establish_connection() -> MysqlConnection {
