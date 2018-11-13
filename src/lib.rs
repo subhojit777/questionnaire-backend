@@ -1,5 +1,6 @@
 extern crate chrono;
 extern crate serde_json;
+extern crate oxide_auth;
 #[macro_use]
 extern crate diesel;
 extern crate actix_web;
