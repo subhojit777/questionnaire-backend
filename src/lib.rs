@@ -1,5 +1,6 @@
 extern crate chrono;
 extern crate serde_json;
+extern crate env_logger;
 #[macro_use]
 extern crate diesel;
 extern crate actix_web;
@@ -11,6 +12,7 @@ use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
     http::Method,
     App,
+    middleware::Logger,
 };
 use diesel::{
     mysql::MysqlConnection,
@@ -36,6 +38,7 @@ pub struct AppState {
 
 pub fn create_app() -> App<AppState> {
     dotenv().ok();
+    env_logger::init();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
@@ -47,6 +50,7 @@ pub fn create_app() -> App<AppState> {
     let addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
 
     App::with_state(AppState { db: addr.clone() })
+        .middleware(Logger::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| r.method(Method::POST).with(answers::post))
 }
