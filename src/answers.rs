@@ -1,26 +1,49 @@
 use actix_web::{
     actix::{Handler, Message},
     error::Error,
-    AsyncResponder, FutureResponse, HttpResponse, Json, State,
+    AsyncResponder, FutureResponse, HttpResponse, Json, State, HttpRequest,
 };
-use crate::{AppState, DbExecutor};
+use crate::{AppState, DbExecutor, AbstractAddr, AbstractEndpoint};
 use diesel::prelude::*;
 use futures::Future;
 use models::{Answer, AnswerForm};
+use oxide_auth::{frontends::actix::*, code_grant::frontend::OAuthError};
 
-pub fn post(
-    (answer_form, state): (Json<AnswerForm>, State<AppState>),
-) -> FutureResponse<HttpResponse> {
-    let answer = answer_form.into_inner();
-
-    state
-        .db
-        .send(answer)
+pub fn post(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
+    let state = req.state().clone();
+    req.oauth2()
+        .guard()
+        .and_then(move |request| state.endpoint.send(request)
+            .map_err(|_| OAuthError::InvalidRequest)
+            .and_then(|result| result)
+        )
+        .json()
         .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        }).responder()
+        .and_then(|answer: AnswerForm| {
+            state.db.send(answer)
+                .from_err()
+                .and_then(|response| match response {
+                    Ok(result) => Ok(HttpResponse::Ok().json(result)),
+                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
+                })
+        })
+        .or_else(|error| {
+            Ok(ResolvedResponse::response_or_error(error)
+                .actix_response()
+                .into_builder()
+                .content_type("text/plain")
+                .body("something wrong happened"))
+        })
+    // let answer =answer.into_inner();
+
+    // state
+    //     .db
+    //     .send(answer)
+    //     .from_err()
+    //     .and_then(|response| match response {
+    //         Ok(result) => Ok(HttpResponse::Ok().json(result)),
+    //         Err(_) => Ok(HttpResponse::InternalServerError().into()),
+    //     }).responder()
 }
 
 impl Message for AnswerForm {
@@ -38,7 +61,7 @@ impl Handler<AnswerForm> for DbExecutor {
         diesel::insert_into(answers)
             .values(&msg)
             .execute(connection)
-            .expect("Error saving the answer_form");
+            .expect("Error saving theanswer");
 
         let result: Answer = answers
             .filter(question_id.eq(&msg.question_id))

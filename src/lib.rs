@@ -36,11 +36,11 @@ impl Actor for DbExecutor {
 }
 
 pub struct AppState {
-    db: Addr<DbExecutor>,
-    endpoint: Arc<AbstractEndpoint + Send + Sync>,
+    pub db: Addr<DbExecutor>,
+    pub endpoint: Arc<AbstractEndpoint + Send + Sync>,
 }
 
-trait AbstractAddr<M: Message> {
+pub trait AbstractAddr<M: Message> {
     fn send(&self, message: M) -> Box<Future<Item=M::Result, Error=MailboxError>>;
 }
 
@@ -56,7 +56,7 @@ impl<A, M> AbstractAddr<M> for Addr<A>
     }
 }
 
-trait AbstractEndpoint {
+pub trait AbstractEndpoint {
     fn access_token(&self) -> &AbstractAddr<AccessToken>;
     fn authorization_code(&self) -> &AbstractAddr<AuthorizationCode>;
     fn resource_guard(&self) -> &AbstractAddr<Guard>;
@@ -92,7 +92,7 @@ pub fn create_app() -> App<AppState> {
     let clients = init_oauth_clients();
 
     let db_addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
-    let endpoint_addr = CodeGrantEndpoint::new((clients, authorizer, issuer, scopes))
+    let endpoint_addr = AbstractEndpoint::new((clients, authorizer, issuer, scopes))
         .with_authorization(|&mut (ref client, ref mut authorizer, _, _)| {
             AuthorizationFlow::new(client, authorizer)
         })
@@ -106,5 +106,5 @@ pub fn create_app() -> App<AppState> {
 
     App::with_state(AppState { db: db_addr, endpoint: Arc::new(endpoint_addr) })
         .resource("/", |r| r.method(Method::GET).f(index::get))
-        .resource("/answers", |r| r.method(Method::POST).with(answers::post))
+        .resource("/answers", |r| r.method(Method::POST).f(answers::post))
 }
