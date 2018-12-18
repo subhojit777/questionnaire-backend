@@ -20,7 +20,7 @@ use diesel::{
 };
 use dotenv::dotenv;
 use std::env;
-use oxide_auth::{frontends::actix::*, frontends::actix::message::*, code_grant::frontend::{OAuthError, OwnerAuthorization}, primitives::prelude::*};
+use oxide_auth::{frontends::actix::*, frontends::actix::message::*, code_grant::{frontend::{OAuthError, OwnerAuthorization}}, primitives::prelude::*};
 use std::sync::Arc;
 use futures::Future;
 
@@ -35,39 +35,9 @@ impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
 }
 
-pub struct AppState {
+pub struct AppState<create_authorization, create_grant, create_access> {
     pub db: Addr<DbExecutor>,
-    pub endpoint: Arc<AbstractEndpoint + Send + Sync>,
-}
-
-pub trait AbstractAddr<M: Message> {
-    fn send(&self, message: M) -> Box<Future<Item=M::Result, Error=MailboxError>>;
-}
-
-impl<A, M> AbstractAddr<M> for Addr<A>
-    where
-        A: Actor + Handler<M>,
-        M: Message + Send + 'static,
-        A::Context: ToEnvelope<A, M>,
-        M::Result: Send,
-{
-    fn send(&self, message: M) -> Box<Future<Item=M::Result, Error=MailboxError>> {
-        Box::new(self.send(message))
-    }
-}
-
-pub trait AbstractEndpoint {
-    fn access_token(&self) -> &AbstractAddr<AccessToken>;
-    fn authorization_code(&self) -> &AbstractAddr<AuthorizationCode>;
-    fn resource_guard(&self) -> &AbstractAddr<Guard>;
-}
-
-impl<T> AbstractEndpoint for T
-    where T: AbstractAddr<AccessToken> + AbstractAddr<AuthorizationCode> + AbstractAddr<Guard>
-{
-    fn access_token(&self) -> &AbstractAddr<AccessToken> { self }
-    fn authorization_code(&self) -> &AbstractAddr<AuthorizationCode> { self }
-    fn resource_guard(&self) -> &AbstractAddr<Guard> { self }
+    pub endpoint: Addr<CodeGrantEndpoint<create_authorization, create_grant, create_access>>,
 }
 
 fn init_oauth_clients() -> ClientMap {
@@ -77,7 +47,19 @@ fn init_oauth_clients() -> ClientMap {
     clients
 }
 
-pub fn create_app() -> App<AppState> {
+pub fn create_authorization(client: &ClientMap, authorizer: &Storage<RandomGenerator>, issuer: &TokenSigner, scopes: &'static[Scope]) -> AuthorizationFlow {
+//    AuthorizationFlow::new(client, authorizer)
+}
+
+pub fn create_grant(client: &ClientMap, authorizer: &Storage<RandomGenerator>, issuer: &TokenSigner, scopes: &'static[Scope]) -> GrantFlow {
+//    GrantFlow::new(client, authorizer, issuer)
+}
+
+pub fn create_access(client: &ClientMap, authorizer: &Storage<RandomGenerator>, issuer: &TokenSigner, scopes: &'static[Scope]) -> AccessFlow {
+//    AccessFlow::new(issuer, scopes)
+}
+
+pub fn create_app() -> App<AppState<create_authorization, create_grant, create_access>> {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
@@ -92,7 +74,7 @@ pub fn create_app() -> App<AppState> {
     let clients = init_oauth_clients();
 
     let db_addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
-    let endpoint_addr = AbstractEndpoint::new((clients, authorizer, issuer, scopes))
+    let endpoint_addr = CodeGrantEndpoint::new((clients, authorizer, issuer, scopes))
         .with_authorization(|&mut (ref client, ref mut authorizer, _, _)| {
             AuthorizationFlow::new(client, authorizer)
         })
@@ -104,7 +86,7 @@ pub fn create_app() -> App<AppState> {
         })
         .start();
 
-    App::with_state(AppState { db: db_addr, endpoint: Arc::new(endpoint_addr) })
+    App::with_state(AppState {db: db_addr, endpoint: endpoint_addr})
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| r.method(Method::POST).f(answers::post))
 }

@@ -3,13 +3,13 @@ use actix_web::{
     error::Error,
     AsyncResponder, FutureResponse, HttpResponse, Json, State, HttpRequest,
 };
-use crate::{AppState, DbExecutor, AbstractAddr, AbstractEndpoint};
+use crate::*;
 use diesel::prelude::*;
 use futures::Future;
 use models::{Answer, AnswerForm};
 use oxide_auth::{frontends::actix::*, code_grant::frontend::OAuthError};
 
-pub fn post(req: &HttpRequest<AppState>) -> FutureResponse<HttpResponse> {
+pub fn post(req: &HttpRequest<AppState<create_authorization, create_grant, create_access>>) -> FutureResponse<HttpResponse> {
     let state = req.state().clone();
     req.oauth2()
         .guard()
