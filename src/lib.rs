@@ -2,6 +2,7 @@ extern crate chrono;
 extern crate serde_json;
 extern crate oxide_auth;
 extern crate actix;
+extern crate env_logger;
 #[macro_use]
 extern crate diesel;
 extern crate actix_web;
@@ -12,6 +13,7 @@ extern crate serde_derive;
 use actix_web::{
     http::Method,
     App,
+    middleware::Logger,
 };
 use actix::{dev::ToEnvelope, Actor, Addr, SyncArbiter, SyncContext, Handler, MailboxError, Message};
 use diesel::{
@@ -61,6 +63,7 @@ pub fn create_access(client: &ClientMap, authorizer: &Storage<RandomGenerator>, 
 
 pub fn create_app() -> App<AppState<create_authorization, create_grant, create_access>> {
     dotenv().ok();
+    env_logger::init();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
@@ -87,6 +90,7 @@ pub fn create_app() -> App<AppState<create_authorization, create_grant, create_a
         .start();
 
     App::with_state(AppState {db: db_addr, endpoint: endpoint_addr})
+        .middleware(Logger::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| r.method(Method::POST).f(answers::post))
 }
