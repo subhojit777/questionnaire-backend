@@ -1,9 +1,9 @@
+use crate::{AppState, DbExecutor};
 use actix_web::{
     actix::{Handler, Message},
     error::Error,
     AsyncResponder, FutureResponse, HttpResponse, Json, State,
 };
-use crate::{AppState, DbExecutor};
 use diesel::prelude::*;
 use futures::Future;
 use models::{Answer, AnswerForm};
@@ -20,7 +20,8 @@ pub fn post(
         .and_then(|response| match response {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
             Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        }).responder()
+        })
+        .responder()
 }
 
 impl Message for AnswerForm {

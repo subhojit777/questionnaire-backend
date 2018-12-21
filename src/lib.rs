@@ -1,6 +1,6 @@
 extern crate chrono;
-extern crate serde_json;
 extern crate env_logger;
+extern crate serde_json;
 #[macro_use]
 extern crate diesel;
 extern crate actix_web;
@@ -11,8 +11,8 @@ extern crate serde_derive;
 use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
     http::Method,
-    App,
     middleware::Logger,
+    App,
 };
 use diesel::{
     mysql::MysqlConnection,
