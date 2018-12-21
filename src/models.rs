@@ -5,7 +5,7 @@ use schema::answers;
 use serde_derive::*;
 
 #[derive(Queryable)]
-pub struct Question {
+pub struct Questions {
     pub id: i32,
     pub title: String,
     pub created: NaiveDateTime,

@@ -9,11 +9,11 @@ table! {
 }
 
 table! {
-    question (id) {
+    questions (id) {
         id -> Integer,
         title -> Varchar,
         created -> Timestamp,
     }
 }
 
-allow_tables_to_appear_in_same_query!(answers, question,);
+allow_tables_to_appear_in_same_query!(answers, questions,);
