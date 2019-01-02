@@ -9,8 +9,8 @@ use futures::Future;
 use models::{Answer, AnswerForm};
 use oxide_auth::{frontends::actix::*, code_grant::frontend::OAuthError};
 
-pub fn post<'a>(req: &'a HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = Error>> {
-    let state = req.state().clone();
+pub fn post(req: &HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let state: AppState = req.state().clone();
     Box::new(req.oauth2()
         .guard()
         .and_then(move |request| state.endpoint.send(request)
