@@ -37,10 +37,39 @@ impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
 }
 
-pub struct AppState<create_authorization, create_grant, create_access> {
+pub struct AppState {
     pub db: Addr<DbExecutor>,
-    pub endpoint: Addr<CodeGrantEndpoint<create_authorization, create_grant, create_access>>,
+    pub endpoint: Addr<CodeGrantEndpoint<
+        State,
+        fn(&mut State) -> AuthorizationFlow,
+        fn(&mut State) -> GrantFlow,
+        fn(&mut State) -> AccessFlow>>,
 }
+
+struct State {
+    clients: ClientMap,
+    authorizer: Storage<RandomGenerator>,
+    issuer: TokenSigner,
+    scopes: Box<[Scope]>,
+}
+
+fn endpoint_authorization(state: &mut State) -> AuthorizationFlow {
+    AuthorizationFlow::new(&state.clients, &mut state.authorizer)
+}
+
+fn endpoint_grant(state: &mut State) -> GrantFlow {
+    GrantFlow::new(&state.clients, &mut state.authorizer, &mut state.issuer)
+}
+
+fn endpoint_guard(state: &mut State) -> AccessFlow {
+    AccessFlow::new(&mut state.issuer, &state.scopes)
+}
+
+type FnEndpoint<State> = CodeGrantEndpoint<
+    State,
+    fn(&mut State) -> AuthorizationFlow,
+    fn(&mut State) -> GrantFlow,
+    fn(&mut State) -> AccessFlow>;
 
 fn init_oauth_clients() -> ClientMap {
     let mut clients = ClientMap::new();
@@ -49,19 +78,7 @@ fn init_oauth_clients() -> ClientMap {
     clients
 }
 
-pub fn create_authorization(client: &ClientMap, authorizer: &Storage<RandomGenerator>, issuer: &TokenSigner, scopes: &'static[Scope]) -> AuthorizationFlow {
-//    AuthorizationFlow::new(client, authorizer)
-}
-
-pub fn create_grant(client: &ClientMap, authorizer: &Storage<RandomGenerator>, issuer: &TokenSigner, scopes: &'static[Scope]) -> GrantFlow {
-//    GrantFlow::new(client, authorizer, issuer)
-}
-
-pub fn create_access(client: &ClientMap, authorizer: &Storage<RandomGenerator>, issuer: &TokenSigner, scopes: &'static[Scope]) -> AccessFlow {
-//    AccessFlow::new(issuer, scopes)
-}
-
-pub fn create_app() -> App<AppState<create_authorization, create_grant, create_access>> {
+pub fn create_app() -> App<AppState> {
     dotenv().ok();
     env_logger::init();
 
@@ -76,21 +93,23 @@ pub fn create_app() -> App<AppState<create_authorization, create_grant, create_a
     let scopes = vec!["default".parse().unwrap()].into_boxed_slice();
     let clients = init_oauth_clients();
 
+    let state = State {
+        clients,
+        authorizer,
+        issuer,
+        scopes,
+    };
+
     let db_addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
-    let endpoint_addr = CodeGrantEndpoint::new((clients, authorizer, issuer, scopes))
-        .with_authorization(|&mut (ref client, ref mut authorizer, _, _)| {
-            AuthorizationFlow::new(client, authorizer)
-        })
-        .with_grant(|&mut (ref client, ref mut authorizer, ref mut issuer, _)| {
-            GrantFlow::new(client, authorizer, issuer)
-        })
-        .with_guard(move |&mut (_, _, ref mut issuer, ref mut scope)| {
-            AccessFlow::new(issuer, scope)
-        })
+    let endpoint_addr: Addr<FnEndpoint<State>> = CodeGrantEndpoint::<State>
+        ::new(state)
+        .with_authorization::<fn(&mut State) -> AuthorizationFlow>(endpoint_authorization)
+        .with_grant::<fn(&mut State) -> GrantFlow>(endpoint_grant)
+        .with_guard::<fn(&mut State) -> AccessFlow>(endpoint_guard)
         .start();
 
     App::with_state(AppState {db: db_addr, endpoint: endpoint_addr})
         .middleware(Logger::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
-        .resource("/answers", |r| r.method(Method::POST).f(answers::post))
+        .resource("/answers", |r| r.method(Method::POST).a(answers::post))
 }

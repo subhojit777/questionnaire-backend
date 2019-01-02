@@ -9,31 +9,42 @@ use futures::Future;
 use models::{Answer, AnswerForm};
 use oxide_auth::{frontends::actix::*, code_grant::frontend::OAuthError};
 
-pub fn post(req: &HttpRequest<AppState<create_authorization, create_grant, create_access>>) -> FutureResponse<HttpResponse> {
+pub fn post<'a>(req: &'a HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let state = req.state().clone();
-    req.oauth2()
+    Box::new(req.oauth2()
         .guard()
         .and_then(move |request| state.endpoint.send(request)
             .map_err(|_| OAuthError::InvalidRequest)
             .and_then(|result| result)
         )
-        .json()
-        .from_err()
-        .and_then(|answer: AnswerForm| {
-            state.db.send(answer)
-                .from_err()
-                .and_then(|response| match response {
-                    Ok(result) => Ok(HttpResponse::Ok().json(result)),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-                })
-        })
+        .map(|()|
+            HttpResponse::Ok()
+                .content_type("text/plain")
+                .body("this should create new answer"))
         .or_else(|error| {
-            Ok(ResolvedResponse::response_or_error(error)
+            Ok(ResolvedResponse::response_or_error((error))
                 .actix_response()
                 .into_builder()
                 .content_type("text/plain")
                 .body("something wrong happened"))
-        })
+        }))
+//        .json()
+//        .from_err()
+//        .and_then(|answer: AnswerForm| {
+//            state.db.send(answer)
+//                .from_err()
+//                .and_then(|response| match response {
+//                    Ok(result) => Ok(HttpResponse::Ok().json(result)),
+//                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
+//                })
+//        })
+//        .or_else(|error| {
+//            Ok(ResolvedResponse::response_or_error(error)
+//                .actix_response()
+//                .into_builder()
+//                .content_type("text/plain")
+//                .body("something wrong happened"))
+//        })
     // let answer =answer.into_inner();
 
     // state
