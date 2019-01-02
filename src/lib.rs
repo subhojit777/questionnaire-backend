@@ -14,6 +14,9 @@ use actix_web::{
     http::Method,
     App,
     middleware::Logger,
+    HttpRequest,
+    HttpResponse,
+    Error as AWError
 };
 use actix::{dev::ToEnvelope, Actor, Addr, SyncArbiter, SyncContext, Handler, MailboxError, Message};
 use diesel::{
@@ -37,6 +40,7 @@ impl Actor for DbExecutor {
     type Context = SyncContext<Self>;
 }
 
+#[derive(Clone)]
 pub struct AppState {
     pub db: Addr<DbExecutor>,
     pub endpoint: Addr<CodeGrantEndpoint<
@@ -46,7 +50,7 @@ pub struct AppState {
         fn(&mut State) -> AccessFlow>>,
 }
 
-struct State {
+pub struct State {
     clients: ClientMap,
     authorizer: Storage<RandomGenerator>,
     issuer: TokenSigner,
@@ -111,5 +115,24 @@ pub fn create_app() -> App<AppState> {
     App::with_state(AppState {db: db_addr, endpoint: endpoint_addr})
         .middleware(Logger::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
-        .resource("/answers", |r| r.method(Method::POST).a(answers::post))
+        .resource("/answers", |r| r.method(Method::POST).f(|req: &HttpRequest<AppState>| {
+            let state: AppState = req.state().clone();
+            Box::new(req.oauth2()
+                .guard()
+                .and_then(move |request| state.endpoint.send(request)
+                    .map_err(|_| OAuthError::InvalidRequest)
+                    .and_then(|result| result)
+                )
+                .map(|()|
+                    HttpResponse::Ok()
+                        .content_type("text/plain")
+                        .body("this should create new answer"))
+                .or_else(|error| {
+                    Ok(ResolvedResponse::response_or_error((error))
+                        .actix_response()
+                        .into_builder()
+                        .content_type("text/plain")
+                        .body("something wrong happened"))
+                })) as Box<Future<Item = HttpResponse, Error = AWError>>
+        }))
 }
