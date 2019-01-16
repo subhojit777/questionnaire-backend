@@ -24,6 +24,7 @@ pub mod answers;
 pub mod index;
 pub mod models;
 pub mod schema;
+pub mod oauth;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 
@@ -119,4 +120,6 @@ pub fn create_app() -> App<AppState> {
     .middleware(Logger::default())
     .resource("/", |r| r.method(Method::GET).f(index::get))
     .resource("/answers", |r| r.method(Method::POST).a(answers::post))
+    .resource("/authorize", |r| r.method(Method::GET).a(oauth::authorize_get))
+    .resource("/authorize", |r| r.method(Method::POST).a(oauth::authorize_post))
 }
