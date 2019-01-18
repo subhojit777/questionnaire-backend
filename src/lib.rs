@@ -119,7 +119,9 @@ pub fn create_app() -> App<AppState> {
     })
     .middleware(Logger::default())
     .resource("/", |r| r.method(Method::GET).f(index::get))
+    .resource("/redirect", |r| r.method(Method::GET).f(answers::redirect_get))
     .resource("/answers", |r| r.method(Method::POST).a(answers::post))
     .resource("/authorize", |r| r.method(Method::GET).a(oauth::authorize_get))
     .resource("/authorize", |r| r.method(Method::POST).a(oauth::authorize_post))
+    .resource("/token", |r| r.method(Method::POST).a(oauth::token_post))
 }

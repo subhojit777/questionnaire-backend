@@ -38,6 +38,21 @@ pub fn authorize_post(req: &HttpRequest<AppState>) -> Box<Future<Item = HttpResp
     )
 }
 
+pub fn token_post(req: &HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let state: AppState = req.state().clone();
+
+    Box::new(req.oauth2()
+        .access_token()
+        .and_then(move |request| state
+            .endpoint
+            .send(request)
+            .map_err(|_| OAuthError::InvalidRequest)
+            .and_then(|result| result.map(Into::into))
+        )
+        .or_else(|err| Ok(ResolvedResponse::response_or_error(err).actix_response()))
+    )
+}
+
 fn handle_get(grant: &PreGrant) -> OwnerAuthorization<ResolvedResponse> {
     let text = format!(
         "<html>'{}' (at {}) is requesting permission for '{}'\

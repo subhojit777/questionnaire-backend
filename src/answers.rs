@@ -63,6 +63,10 @@ pub fn post(req: &HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Erro
     //     }).responder()
 }
 
+pub fn redirect_get(req: &HttpRequest<AppState>) -> String {
+    String::from("The redirect page")
+}
+
 impl Message for AnswerForm {
     type Result = Result<Answer, Error>;
 }
