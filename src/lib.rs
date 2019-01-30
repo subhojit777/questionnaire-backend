@@ -6,6 +6,7 @@ extern crate diesel;
 extern crate actix_web;
 extern crate dotenv;
 extern crate futures;
+extern crate serde;
 extern crate serde_derive;
 
 use actix_web::{
@@ -22,6 +23,7 @@ use dotenv::dotenv;
 use std::env;
 
 pub mod answers;
+pub mod github;
 pub mod index;
 pub mod models;
 pub mod schema;
@@ -53,4 +55,8 @@ pub fn create_app() -> App<AppState> {
         .middleware(Logger::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| r.method(Method::POST).with(answers::post))
+        .resource("/gh-login", |r| r.method(Method::GET).f(github::login_page))
+        .resource("/gh-redirect", |r| {
+            r.method(Method::GET).a(github::login_redirect)
+        })
 }
