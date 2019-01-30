@@ -1,4 +1,5 @@
 use crate::AppState;
+use crate::models;
 use actix_web::actix;
 use actix_web::client;
 use actix_web::client::ClientResponse;
@@ -42,7 +43,7 @@ pub fn login_redirect(
     let github_client_secret =
         env::var("GITHUB_CLIENT_SECRET").expect("GITHUB_CLIENT_SECRET must be set.");
 
-    let json_body = Body::new(
+    let json_body = models::GHAccessTokenBody::new(
         github_client_id,
         github_client_secret,
         session_code,
@@ -58,23 +59,4 @@ pub fn login_redirect(
             Ok(HttpResponse::Ok().body("inside future"))
         })
         .responder()
-}
-
-#[derive(Serialize, Deserialize)]
-struct Body {
-    client_id: String,
-    client_secret: String,
-    code: String,
-    accept: String,
-}
-
-impl Body {
-    fn new(client_id: String, client_secret: String, code: String, accept: String) -> Self {
-        Body {
-            client_id,
-            client_secret,
-            code,
-            accept,
-        }
-    }
 }
