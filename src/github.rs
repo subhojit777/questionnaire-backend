@@ -1,17 +1,13 @@
 use crate::AppState;
 use crate::models;
-use actix_web::actix;
 use actix_web::client;
 use actix_web::client::ClientResponse;
 use actix_web::error::Error;
 use actix_web::AsyncResponder;
-use actix_web::FutureResponse;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use dotenv::dotenv;
 use futures::Future;
-use serde_derive::Deserialize;
-use serde_derive::Serialize;
 use std::env;
 
 pub fn login_page(_: &HttpRequest<AppState>) -> HttpResponse {

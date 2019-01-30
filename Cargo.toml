@@ -5,7 +5,7 @@ authors = ["Subhojit Paul <subhojitpaul21@gmail.com>"]
 
 [dependencies]
 actix-web = { version = "^0.7", features = ["ssl"] }
-diesel = { version = "1.3.3", features = ["mysql", "chrono", "r2d2"] }
+diesel = { version = "^1.4", features = ["mysql", "chrono", "r2d2"] }
 dotenv = "0.13.0"
 serde = "1.0.80"
 serde_derive = "1.0.80"
