@@ -1,14 +1,17 @@
-use crate::AppState;
 use crate::models;
+use crate::AppState;
 use actix_web::client;
 use actix_web::client::ClientResponse;
 use actix_web::error::Error;
+use actix_web::middleware::session::RequestSession;
 use actix_web::AsyncResponder;
+use actix_web::HttpMessage;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use dotenv::dotenv;
 use futures::Future;
 use std::env;
+use std::str;
 
 pub fn login_page(_: &HttpRequest<AppState>) -> HttpResponse {
     dotenv().ok();
@@ -51,8 +54,20 @@ pub fn login_redirect(
         .unwrap()
         .send()
         .from_err()
-        .and_then(|_res: ClientResponse| {
-            Ok(HttpResponse::Ok().body("inside future"))
+        .and_then(|res: ClientResponse| {
+            res.body().from_err().and_then(|body| {
+                let items: Vec<&str> = str::from_utf8(body.as_ref()).unwrap().split('&').collect();
+
+                for item in items {
+                    let (key, value) = item.split_at(item.find('=').unwrap());
+
+                    if key == "access_token" {
+                        let token = value.trim_matches('=');
+                        req.session().set("token", token)?;
+                    }
+                }
+                Ok(HttpResponse::Ok().body(String::from("inside inside future")))
+            })
         })
         .responder()
 }

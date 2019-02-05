@@ -9,6 +9,8 @@ extern crate futures;
 extern crate serde;
 extern crate serde_derive;
 
+use actix_web::middleware::session::CookieSessionBackend;
+use actix_web::middleware::session::SessionStorage;
 use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
     http::Method,
@@ -53,6 +55,9 @@ pub fn create_app() -> App<AppState> {
 
     App::with_state(AppState { db: addr.clone() })
         .middleware(Logger::default())
+        .middleware(SessionStorage::new(
+            CookieSessionBackend::signed(&[0; 32]).secure(true),
+        ))
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| r.method(Method::POST).with(answers::post))
         .resource("/gh-login", |r| r.method(Method::GET).f(github::login_page))
