@@ -3,7 +3,7 @@ use crate::AppState;
 use actix_web::client;
 use actix_web::client::ClientResponse;
 use actix_web::error::Error;
-use actix_web::middleware::session::RequestSession;
+use actix_web::http::Cookie;
 use actix_web::AsyncResponder;
 use actix_web::HttpMessage;
 use actix_web::HttpRequest;
@@ -57,16 +57,19 @@ pub fn login_redirect(
         .and_then(|res: ClientResponse| {
             res.body().from_err().and_then(|body| {
                 let items: Vec<&str> = str::from_utf8(body.as_ref()).unwrap().split('&').collect();
+                let mut token = Cookie::new("token", "");
 
                 for item in items {
                     let (key, value) = item.split_at(item.find('=').unwrap());
 
                     if key == "access_token" {
-                        let token = value.trim_matches('=');
-                        req.session().set("token", token)?;
+                        token.set_value(value.trim_matches('=').to_string());
                     }
                 }
-                Ok(HttpResponse::Ok().body(String::from("inside inside future")))
+
+                Ok(HttpResponse::Ok()
+                    .cookie(token)
+                    .body("inside inside future"))
             })
         })
         .responder()
