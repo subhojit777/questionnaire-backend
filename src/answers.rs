@@ -2,15 +2,17 @@ use crate::{AppState, DbExecutor};
 use actix_web::{
     actix::{Handler, Message},
     error::Error,
-    AsyncResponder, FutureResponse, HttpResponse, Json, State,
+    AsyncResponder, HttpRequest, HttpResponse, Json, State,
 };
 use diesel::prelude::*;
 use futures::Future;
 use models::{Answer, AnswerForm};
 
 pub fn post(
-    (answer_form, state): (Json<AnswerForm>, State<AppState>),
-) -> FutureResponse<HttpResponse> {
+    answer_form: Json<AnswerForm>,
+    state: State<AppState>,
+    _req: HttpRequest<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let answer = answer_form.into_inner();
 
     state
