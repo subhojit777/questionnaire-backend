@@ -57,6 +57,9 @@ pub fn create_app() -> App<AppState> {
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)
         })
+        .resource("/answers-get", |r| {
+            r.method(Method::GET).with_async(answers::get)
+        })
         .resource("/gh-login", |r| r.method(Method::GET).f(github::login_page))
         .resource("/gh-redirect", |r| {
             r.method(Method::GET).a(github::login_redirect)
