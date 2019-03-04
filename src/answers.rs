@@ -1,4 +1,4 @@
-use crate::{AppState, DbExecutor};
+use crate::{failure::Fail, AppState, DbExecutor};
 use actix_web::client::ClientResponse;
 use actix_web::error as AWError;
 use actix_web::http::HeaderMap;
@@ -12,9 +12,6 @@ use diesel::prelude::*;
 use futures::Async;
 use futures::Future;
 use models::{Answer, AnswerForm};
-use std::error as StdError;
-use std::fmt;
-use std::fmt::Formatter;
 
 pub fn post(
     answer_form: Json<AnswerForm>,
@@ -48,12 +45,10 @@ pub fn get(req: HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error 
                 .unwrap()
                 .send()
                 .from_err()
-                .and_then(|res: ClientResponse| {
-                    if res.status() == 200 {
-                        return Ok(HttpResponse::Ok().body("answers get"));
-                    }
-
-                    Ok(HttpResponse::Forbidden().into())
+                .and_then(|res: ClientResponse| match res.status() {
+                    StatusCode::OK => Ok(HttpResponse::Ok().into()),
+                    StatusCode::FORBIDDEN => Ok(HttpResponse::Forbidden().into()),
+                    _ => Ok(HttpResponse::NotAcceptable().into()),
                 })
         })
         .responder()
@@ -86,26 +81,17 @@ impl Handler<AnswerForm> for DbExecutor {
     }
 }
 
-#[derive(Debug)]
-struct OauthError {
-    name: &'static str,
-}
-
-impl fmt::Display for OauthError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
-
-impl StdError::Error for OauthError {
-    fn description(&self) -> &str {
-        self.name
-    }
+#[derive(Fail, Debug)]
+enum OauthError {
+    #[fail(display = "bad request")]
+    BadRequest,
 }
 
 impl ResponseError for OauthError {
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::new(StatusCode::INTERNAL_SERVER_ERROR)
+        match *self {
+            OauthError::BadRequest => HttpResponse::new(StatusCode::BAD_REQUEST),
+        }
     }
 }
 
@@ -121,9 +107,7 @@ impl Future for HeaderMapWrapper {
         if let Some(token) = self.map.get("authorization") {
             Ok(Async::Ready(token.to_str().unwrap().to_string()))
         } else {
-            Err(OauthError {
-                name: "token not found",
-            })
+            Err(OauthError::BadRequest)
         }
     }
 }
