@@ -34,9 +34,7 @@ pub fn post(
         .responder()
 }
 
-pub fn get<'a>(
-    req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
+pub fn get(req: HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
     let header_map: HeaderMapWrapper = HeaderMapWrapper {
         map: req.headers().clone(),
     };
@@ -50,7 +48,13 @@ pub fn get<'a>(
                 .unwrap()
                 .send()
                 .from_err()
-                .and_then(|res: ClientResponse| Ok(HttpResponse::Ok().body("answers get")))
+                .and_then(|res: ClientResponse| {
+                    if res.status() == 200 {
+                        return Ok(HttpResponse::Ok().body("answers get"));
+                    }
+
+                    Ok(HttpResponse::Forbidden().into())
+                })
         })
         .responder()
 }
