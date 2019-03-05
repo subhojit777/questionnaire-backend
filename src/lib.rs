@@ -28,6 +28,7 @@ pub mod github;
 pub mod index;
 pub mod models;
 pub mod schema;
+pub mod oauth_error;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 

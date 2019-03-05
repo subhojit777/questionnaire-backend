@@ -1,9 +1,8 @@
-use crate::{failure::Fail, AppState, DbExecutor};
+use crate::{oauth_error::OauthError, AppState, DbExecutor};
 use actix_web::client::ClientResponse;
 use actix_web::error as AWError;
 use actix_web::http::HeaderMap;
 use actix_web::http::StatusCode;
-use actix_web::ResponseError;
 use actix_web::{
     actix::{Handler, Message},
     client, AsyncResponder, HttpRequest, HttpResponse, Json, State,
@@ -81,20 +80,7 @@ impl Handler<AnswerForm> for DbExecutor {
     }
 }
 
-#[derive(Fail, Debug)]
-enum OauthError {
-    #[fail(display = "bad request")]
-    BadRequest,
-}
-
-impl ResponseError for OauthError {
-    fn error_response(&self) -> HttpResponse {
-        match *self {
-            OauthError::BadRequest => HttpResponse::new(StatusCode::BAD_REQUEST),
-        }
-    }
-}
-
+/// Future implementation of actix_web::http::HeaderMap.
 struct HeaderMapWrapper {
     map: HeaderMap,
 }
