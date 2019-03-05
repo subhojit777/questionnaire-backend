@@ -91,7 +91,10 @@ impl Future for HeaderMapWrapper {
 
     fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
         if let Some(token) = self.map.get("authorization") {
-            Ok(Async::Ready(token.to_str().unwrap().to_string()))
+            match token.to_str() {
+                Ok(val) => return Ok(Async::Ready(val.to_string())),
+                Err(_) => return Err(OauthError::BadRequest),
+            };
         } else {
             Err(OauthError::BadRequest)
         }
