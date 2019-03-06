@@ -13,15 +13,6 @@ use futures::Future;
 use std::env;
 use std::str;
 
-pub fn login_page(_: &HttpRequest<AppState>) -> HttpResponse {
-    dotenv().ok();
-    let github_client_id = env::var("GITHUB_CLIENT_ID").expect("GITHUB_CLIENT_ID must be set.");
-
-    let body = format!("<html><body><a href=\"https://github.com/login/oauth/authorize?scope=user:email&client_id={}\">Click here to login</a></body></html>", github_client_id);
-
-    HttpResponse::Ok().content_type("text/html").body(body)
-}
-
 pub fn login_redirect(
     req: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
