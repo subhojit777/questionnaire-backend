@@ -30,6 +30,8 @@ pub fn post(
         .responder()
 }
 
+/// TODO: This is not yet fully implemented. It is supposed to return an answer based on an ID.
+/// The code inside explains how the oauth wrapper is supposed to work.
 pub fn get(req: HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
     let header_map: HeaderMapWrapper = HeaderMapWrapper {
         map: req.headers().clone(),
