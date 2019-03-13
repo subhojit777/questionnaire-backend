@@ -27,3 +27,22 @@ pub struct AnswerForm {
     pub title: String,
     pub user_id: i32,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct GHAccessTokenBody {
+    client_id: String,
+    client_secret: String,
+    code: String,
+    accept: String,
+}
+
+impl GHAccessTokenBody {
+    pub fn new(client_id: String, client_secret: String, code: String, accept: String) -> Self {
+        GHAccessTokenBody {
+            client_id,
+            client_secret,
+            code,
+            accept,
+        }
+    }
+}

@@ -5,7 +5,9 @@ extern crate serde_json;
 extern crate diesel;
 extern crate actix_web;
 extern crate dotenv;
+extern crate failure;
 extern crate futures;
+extern crate serde;
 extern crate serde_derive;
 
 use actix_web::{
@@ -22,9 +24,11 @@ use dotenv::dotenv;
 use std::env;
 
 pub mod answers;
+pub mod github;
 pub mod index;
 pub mod models;
 pub mod schema;
+pub mod oauth_error;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 
@@ -52,5 +56,13 @@ pub fn create_app() -> App<AppState> {
     App::with_state(AppState { db: addr.clone() })
         .middleware(Logger::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
-        .resource("/answers", |r| r.method(Method::POST).with(answers::post))
+        .resource("/answers", |r| {
+            r.method(Method::POST).with_async(answers::post)
+        })
+        .resource("/answers-get", |r| {
+            r.method(Method::GET).with_async(answers::get)
+        })
+        .resource("/gh-redirect", |r| {
+            r.method(Method::GET).a(github::login_redirect)
+        })
 }
