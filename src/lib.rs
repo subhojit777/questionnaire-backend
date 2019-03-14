@@ -24,12 +24,11 @@ use dotenv::dotenv;
 use std::env;
 
 pub mod answers;
+pub mod error;
 pub mod github;
 pub mod index;
 pub mod models;
 pub mod schema;
-pub mod oauth_error;
-pub mod error;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 

@@ -1,4 +1,4 @@
-use crate::{oauth_error::OauthError, AppState, DbExecutor};
+use crate::{error::Oauth as OauthError, AppState, DbExecutor};
 use actix_web::client::ClientResponse;
 use actix_web::error as AWError;
 use actix_web::http::HeaderMap;

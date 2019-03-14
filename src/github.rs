@@ -9,8 +9,8 @@ use actix_web::HttpMessage;
 use actix_web::HttpRequest;
 use actix_web::HttpResponse;
 use dotenv::dotenv;
+use error::Oauth as OauthError;
 use futures::{Async, Future};
-use oauth_error::OauthError;
 use std::collections::HashMap;
 use std::env;
 use std::str;
@@ -71,9 +71,7 @@ pub fn login_redirect(
                             }
                         }
 
-                        Ok(HttpResponse::Ok()
-                            .cookie(token)
-                            .body(""))
+                        Ok(HttpResponse::Ok().cookie(token).body(""))
                     })
                 })
         })
