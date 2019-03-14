@@ -29,6 +29,7 @@ pub mod index;
 pub mod models;
 pub mod schema;
 pub mod oauth_error;
+pub mod error;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 
