@@ -1,4 +1,4 @@
-use crate::{error::Oauth as OauthError, AppState, DbExecutor};
+use crate::{error, AppState, DbExecutor};
 use actix_web::client::ClientResponse;
 use actix_web::error as AWError;
 use actix_web::http::HeaderMap;
@@ -56,11 +56,11 @@ pub fn get(req: HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error 
 }
 
 impl Message for AnswerForm {
-    type Result = Result<Answer, AWError::Error>;
+    type Result = Result<Answer, error::Db>;
 }
 
 impl Handler<AnswerForm> for DbExecutor {
-    type Result = Result<Answer, AWError::Error>;
+    type Result = Result<Answer, error::Db>;
 
     fn handle(&mut self, msg: AnswerForm, _: &mut Self::Context) -> Self::Result {
         use schema::answers::dsl::{answers, question_id, user_id};
@@ -72,13 +72,18 @@ impl Handler<AnswerForm> for DbExecutor {
             .execute(connection)
             .expect("Error saving the answer_form");
 
-        let result: Answer = answers
-            .filter(question_id.eq(&msg.question_id))
-            .filter(user_id.eq(&msg.user_id))
-            .first(connection)
-            .unwrap();
+        let result: QueryResult<Answer> = answers
+            .filter(
+                question_id
+                    .eq(&msg.question_id)
+                    .and(user_id.eq(&msg.user_id)),
+            )
+            .first(connection);
 
-        Ok(result)
+        match result {
+            Ok(answer) => Ok(answer),
+            Err(_) => Err(error::Db),
+        }
     }
 }
 
@@ -89,16 +94,16 @@ struct HeaderMapWrapper {
 
 impl Future for HeaderMapWrapper {
     type Item = String;
-    type Error = OauthError;
+    type Error = error::Oauth;
 
     fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
         if let Some(token) = self.map.get("authorization") {
             match token.to_str() {
                 Ok(val) => return Ok(Async::Ready(val.to_string())),
-                Err(_) => return Err(OauthError::BadRequest),
+                Err(_) => return Err(error::Oauth::BadRequest),
             };
         } else {
-            Err(OauthError::BadRequest)
+            Err(error::Oauth::BadRequest)
         }
     }
 }
