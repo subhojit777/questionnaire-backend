@@ -1,14 +1,13 @@
-use crate::{error, AppState, DbExecutor};
+use crate::{error, helpers::header_map_wrapper::HeaderMapWrapper, AppState, DbExecutor};
 use actix_web::client::ClientResponse;
 use actix_web::error as AWError;
-use actix_web::http::HeaderMap;
+
 use actix_web::http::StatusCode;
 use actix_web::{
     actix::{Handler, Message},
     client, AsyncResponder, HttpRequest, HttpResponse, Json, State,
 };
 use diesel::prelude::*;
-use futures::Async;
 use futures::Future;
 use models::{Answer, AnswerForm};
 
@@ -83,27 +82,6 @@ impl Handler<AnswerForm> for DbExecutor {
         match result {
             Ok(answer) => Ok(answer),
             Err(_) => Err(error::Db),
-        }
-    }
-}
-
-/// Future implementation of actix_web::http::HeaderMap.
-struct HeaderMapWrapper {
-    map: HeaderMap,
-}
-
-impl Future for HeaderMapWrapper {
-    type Item = String;
-    type Error = error::Oauth;
-
-    fn poll(&mut self) -> Result<Async<Self::Item>, Self::Error> {
-        if let Some(token) = self.map.get("authorization") {
-            match token.to_str() {
-                Ok(val) => return Ok(Async::Ready(val.to_string())),
-                Err(_) => return Err(error::Oauth::BadRequest),
-            };
-        } else {
-            Err(error::Oauth::BadRequest)
         }
     }
 }

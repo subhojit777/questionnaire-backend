@@ -29,6 +29,8 @@ pub mod github;
 pub mod index;
 pub mod models;
 pub mod schema;
+pub mod middleware;
+pub mod helpers;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 
