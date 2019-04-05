@@ -21,9 +21,9 @@ impl<S> Middleware<S> for GitHubUser {
                         .from_err()
                         .and_then(|res: ClientResponse| match res.status() {
                             StatusCode::OK => {
-                                return future::ok(Some(HttpResponse::Ok().finish()));
+                                return future::ok(None);
                             }
-                            _ => return future::ok(None),
+                            _ => return future::ok(Some(HttpResponse::BadRequest().finish())),
                         });
 
                     return Ok(Started::Future(Box::new(gh_user_future)));
