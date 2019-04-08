@@ -20,12 +20,13 @@ pub struct Answer {
     pub created: NaiveDateTime,
 }
 
-#[derive(Deserialize, Serialize, Insertable)]
+#[derive(Deserialize, Serialize, Insertable, Debug)]
 #[table_name = "answers"]
 pub struct AnswerForm {
     pub question_id: i32,
     pub title: String,
     pub user_id: i32,
+    pub created: NaiveDateTime,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,3 +47,6 @@ impl GHAccessTokenBody {
         }
     }
 }
+
+#[derive(Queryable, Deserialize)]
+pub struct AnswerId(pub i32);

@@ -21,14 +21,17 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use dotenv::dotenv;
+use middleware::GitHubUser;
 use std::env;
 
 pub mod answers;
+pub mod error;
 pub mod github;
+pub mod helpers;
 pub mod index;
+pub mod middleware;
 pub mod models;
 pub mod schema;
-pub mod oauth_error;
 
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 
@@ -55,11 +58,12 @@ pub fn create_app() -> App<AppState> {
 
     App::with_state(AppState { db: addr.clone() })
         .middleware(Logger::default())
+        .middleware(GitHubUser)
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)
         })
-        .resource("/answers-get", |r| {
+        .resource("/answers/{id}", |r| {
             r.method(Method::GET).with_async(answers::get)
         })
         .resource("/gh-redirect", |r| {
