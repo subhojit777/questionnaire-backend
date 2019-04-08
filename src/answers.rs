@@ -1,15 +1,13 @@
-use crate::{error, helpers::header_map_wrapper::HeaderMapWrapper, AppState, DbExecutor};
-use actix_web::client::ClientResponse;
-use actix_web::error as AWError;
+use crate::{error, AppState, DbExecutor};
+use actix_web::{error as AWError, Path};
 
-use actix_web::http::StatusCode;
 use actix_web::{
     actix::{Handler, Message},
-    client, AsyncResponder, HttpRequest, HttpResponse, Json, State,
+    AsyncResponder, HttpRequest, HttpResponse, Json, State,
 };
 use diesel::prelude::*;
 use futures::Future;
-use models::{Answer, AnswerForm};
+use models::{Answer, AnswerForm, AnswerId};
 
 pub fn post(
     answer_form: Json<AnswerForm>,
@@ -31,25 +29,17 @@ pub fn post(
 
 /// TODO: This is not yet fully implemented. It is supposed to return an answer based on an ID.
 /// The code inside explains how the oauth wrapper is supposed to work.
-pub fn get(req: HttpRequest<AppState>) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
-    let header_map: HeaderMapWrapper = HeaderMapWrapper {
-        map: req.headers().clone(),
-    };
-
-    header_map
+pub fn get(
+    data: Path<AnswerId>,
+    req: HttpRequest<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
+    req.state()
+        .db
+        .send(data.into_inner())
         .from_err()
-        .and_then(|access_token| {
-            client::get("https://api.github.com/user")
-                .header("Authorization", access_token)
-                .finish()
-                .unwrap()
-                .send()
-                .from_err()
-                .and_then(|res: ClientResponse| match res.status() {
-                    StatusCode::OK => Ok(HttpResponse::Ok().into()),
-                    StatusCode::FORBIDDEN => Ok(HttpResponse::Forbidden().into()),
-                    _ => Ok(HttpResponse::NotAcceptable().into()),
-                })
+        .and_then(|response| match response {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
         })
         .responder()
 }
@@ -78,6 +68,27 @@ impl Handler<AnswerForm> for DbExecutor {
                     .and(user_id.eq(&msg.user_id)),
             )
             .first(connection);
+
+        match result {
+            Ok(answer) => Ok(answer),
+            Err(_) => Err(error::Db),
+        }
+    }
+}
+
+impl Message for AnswerId {
+    type Result = Result<Answer, error::Db>;
+}
+
+impl Handler<AnswerId> for DbExecutor {
+    type Result = Result<Answer, error::Db>;
+
+    fn handle(&mut self, msg: AnswerId, _ctx: &mut Self::Context) -> Self::Result {
+        use schema::answers::dsl::{answers, id};
+
+        let connection: &MysqlConnection = &self.0.get().unwrap();
+
+        let result: QueryResult<Answer> = answers.filter(id.eq(&msg.0)).first(connection);
 
         match result {
             Ok(answer) => Ok(answer),

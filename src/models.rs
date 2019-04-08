@@ -47,3 +47,6 @@ impl GHAccessTokenBody {
         }
     }
 }
+
+#[derive(Queryable, Deserialize)]
+pub struct AnswerId(pub i32);
