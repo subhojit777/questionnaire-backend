@@ -1,5 +1,6 @@
 extern crate chrono;
 extern crate env_logger;
+extern crate reqwest;
 extern crate serde_json;
 #[macro_use]
 extern crate diesel;
@@ -10,6 +11,7 @@ extern crate futures;
 extern crate serde;
 extern crate serde_derive;
 
+use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
     http::Method,
@@ -58,6 +60,9 @@ pub fn create_app() -> App<AppState> {
 
     App::with_state(AppState { db: addr.clone() })
         .middleware(Logger::default())
+        .middleware(SessionStorage::new(
+            CookieSessionBackend::signed(&[0; 32]).secure(false),
+        ))
         .middleware(GitHubUser)
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| {
