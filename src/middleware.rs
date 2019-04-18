@@ -1,4 +1,5 @@
 use crate::error::Oauth;
+use actix_web::middleware::session::RequestSession;
 use actix_web::middleware::{Middleware, Started};
 use actix_web::{Error, HttpRequest};
 use reqwest::header::AUTHORIZATION;
@@ -7,7 +8,7 @@ use serde_derive::*;
 
 pub struct GitHubUser;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct GitHubResponse {
     id: i32,
 }
@@ -29,8 +30,12 @@ impl<S> Middleware<S> for GitHubUser {
                         return Err(Error::from(Oauth::BadRequest));
                     }
 
-                    // TODO: Store user id in session.
-                    dbg!(response.json::<GitHubResponse>().unwrap());
+                    req.session().set(
+                        "gh_user_id",
+                        response.json::<GitHubResponse>().expect(
+                            "Unable to parse user id from response. Please check logs for details.",
+                        ),
+                    )?;
 
                     return Ok(Started::Done);
                 }
