@@ -18,9 +18,12 @@ impl<S> Middleware<S> for GitHubUser {
         if let Some(token) = req.headers().get("authorization") {
             match token.to_str() {
                 Ok(access_token) => {
-                    if let Some(gh_user_id) = req.session().get::<GitHubResponse>("gh_user_id")? {
-                        return Ok(Started::Done);
+                    if let Some(_) = req.session().get::<GitHubResponse>("gh_user_id")? {
                     } else {
+                        // Using synchronous reqwest to retrieve user_id from GitHub.
+                        // Actix doesn't yet provides a synchronous API. And doing it using futures
+                        // felt unnecessary. Actix even uses futures to parse a JSON response which
+                        // I felt is completely unnecessary here.
                         let client = Client::new();
                         let mut response = client
                             .get("https://api.github.com/user")
