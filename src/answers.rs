@@ -1,28 +1,46 @@
 use crate::{error, AppState, DbExecutor};
 use actix_web::{error as AWError, Path};
 
+use actix_web::middleware::session::RequestSession;
 use actix_web::{
     actix::{Handler, Message},
     AsyncResponder, HttpRequest, HttpResponse, Json, State,
 };
 use diesel::prelude::*;
+use futures::future::IntoFuture;
 use futures::Future;
-use models::{Answer, AnswerForm, AnswerId};
+use middleware::GitHubResponse;
+use models::{Answer, AnswerId, AnswerInput, NewAnswer};
 
 pub fn post(
-    answer_form: Json<AnswerForm>,
+    data: Json<AnswerInput>,
     state: State<AppState>,
-    _req: HttpRequest<AppState>,
+    req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
-    let answer = answer_form.into_inner();
+    let gh_user_id_session = req
+        .session()
+        .get::<GitHubResponse>("gh_user_id")
+        .into_future();
 
-    state
-        .db
-        .send(answer)
+    gh_user_id_session
         .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        .and_then(move |gh_user_id| {
+            let input = data.into_inner();
+            let new_answer = NewAnswer::new(
+                input.question_id,
+                input.title,
+                gh_user_id.unwrap().id,
+                input.created,
+            );
+
+            state
+                .db
+                .send(new_answer)
+                .from_err()
+                .and_then(|response| match response {
+                    Ok(result) => Ok(HttpResponse::Ok().json(result)),
+                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
+                })
         })
         .responder()
 }
@@ -44,14 +62,14 @@ pub fn get(
         .responder()
 }
 
-impl Message for AnswerForm {
+impl Message for NewAnswer {
     type Result = Result<Answer, error::Db>;
 }
 
-impl Handler<AnswerForm> for DbExecutor {
+impl Handler<NewAnswer> for DbExecutor {
     type Result = Result<Answer, error::Db>;
 
-    fn handle(&mut self, msg: AnswerForm, _: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: NewAnswer, _: &mut Self::Context) -> Self::Result {
         use schema::answers::dsl::{answers, question_id, user_id};
 
         let connection: &MysqlConnection = &self.0.get().unwrap();

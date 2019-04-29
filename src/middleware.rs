@@ -10,7 +10,7 @@ pub struct GitHubUser;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GitHubResponse {
-    id: i32,
+    pub id: i32,
 }
 
 impl<S> Middleware<S> for GitHubUser {

@@ -20,12 +20,30 @@ pub struct Answer {
     pub created: NaiveDateTime,
 }
 
-#[derive(Deserialize, Serialize, Insertable, Debug)]
+#[derive(Insertable, Debug)]
 #[table_name = "answers"]
-pub struct AnswerForm {
+pub struct NewAnswer {
     pub question_id: i32,
     pub title: String,
     pub user_id: i32,
+    pub created: NaiveDateTime,
+}
+
+impl NewAnswer {
+    pub fn new(question_id: i32, title: String, user_id: i32, created: NaiveDateTime) -> Self {
+        NewAnswer {
+            question_id,
+            title,
+            user_id,
+            created,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AnswerInput {
+    pub question_id: i32,
+    pub title: String,
     pub created: NaiveDateTime,
 }
 

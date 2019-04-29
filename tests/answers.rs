@@ -3,14 +3,14 @@ extern crate questionnaire_rs;
 extern crate serde_json;
 
 use actix_web::{http::Method, test::TestServer, HttpMessage};
-use questionnaire_rs::models::{Answer, AnswerForm};
+use questionnaire_rs::models::{Answer, AnswerInput};
 use std::str;
 
 #[test]
 fn post() {
     let mut server = TestServer::with_factory(questionnaire_rs::create_app);
 
-    let answer_form = AnswerForm {
+    let answer_form = AnswerInput {
         question_id: 10,
         title: String::from("Some answer"),
         user_id: 1,
