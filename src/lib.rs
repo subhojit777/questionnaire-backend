@@ -23,7 +23,7 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use dotenv::dotenv;
-use middleware::GitHubUser;
+use middleware::GitHubResponse;
 use std::env;
 
 pub mod answers;
@@ -63,7 +63,7 @@ pub fn create_app() -> App<AppState> {
         .middleware(SessionStorage::new(
             CookieSessionBackend::signed(&[0; 32]).secure(false),
         ))
-        .middleware(GitHubUser)
+        .middleware(GitHubResponse::default())
         .resource("/", |r| r.method(Method::GET).f(index::get))
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)

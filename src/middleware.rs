@@ -6,14 +6,18 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::{Client, StatusCode};
 use serde_derive::*;
 
-pub struct GitHubUser;
-
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GitHubResponse {
     pub id: i32,
 }
 
-impl<S> Middleware<S> for GitHubUser {
+impl GitHubResponse {
+    pub fn default() -> Self {
+        GitHubResponse { id: -1 }
+    }
+}
+
+impl<S> Middleware<S> for GitHubResponse {
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
         if let Some(token) = req.headers().get("authorization") {
             match token.to_str() {
