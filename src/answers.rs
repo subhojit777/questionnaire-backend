@@ -77,7 +77,7 @@ impl Handler<NewAnswer> for DbExecutor {
         diesel::insert_into(answers)
             .values(&msg)
             .execute(connection)
-            .expect("Error saving the answer_form");
+            .expect("Error saving the an answer");
 
         let result: QueryResult<Answer> = answers
             .filter(
