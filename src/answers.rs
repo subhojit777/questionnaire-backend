@@ -38,7 +38,7 @@ pub fn post(
                 .send(new_answer)
                 .from_err()
                 .and_then(|response| match response {
-                    Ok(result) => Ok(HttpResponse::Ok().json(result)),
+                    Ok(_) => Ok(HttpResponse::Ok().finish()),
                     Err(_) => Ok(HttpResponse::InternalServerError().into()),
                 })
         })
@@ -63,34 +63,23 @@ pub fn get(
 }
 
 impl Message for NewAnswer {
-    type Result = Result<Answer, error::Db>;
+    type Result = Result<(), error::Db>;
 }
 
 impl Handler<NewAnswer> for DbExecutor {
-    type Result = Result<Answer, error::Db>;
+    type Result = Result<(), error::Db>;
 
     fn handle(&mut self, msg: NewAnswer, _: &mut Self::Context) -> Self::Result {
-        use schema::answers::dsl::{answers, question_id, user_id};
+        use schema::answers::dsl::answers;
 
         let connection: &MysqlConnection = &self.0.get().unwrap();
 
         diesel::insert_into(answers)
             .values(&msg)
             .execute(connection)
-            .expect("Error saving the answer_form");
+            .expect("Error saving the an answer");
 
-        let result: QueryResult<Answer> = answers
-            .filter(
-                question_id
-                    .eq(&msg.question_id)
-                    .and(user_id.eq(&msg.user_id)),
-            )
-            .first(connection);
-
-        match result {
-            Ok(answer) => Ok(answer),
-            Err(_) => Err(error::Db),
-        }
+        Ok(())
     }
 }
 
