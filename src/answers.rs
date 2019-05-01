@@ -6,6 +6,7 @@ use actix_web::{
     actix::{Handler, Message},
     AsyncResponder, HttpRequest, HttpResponse, Json, State,
 };
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use futures::future::IntoFuture;
 use futures::Future;
@@ -22,6 +23,8 @@ pub fn post(
         .get::<GitHubResponse>("gh_user_id")
         .into_future();
 
+    let now: DateTime<Utc> = Utc::now();
+
     gh_user_id_session
         .from_err()
         .and_then(move |gh_user_id| {
@@ -30,7 +33,7 @@ pub fn post(
                 input.question_id,
                 input.title,
                 gh_user_id.unwrap().id,
-                input.created,
+                now.naive_utc(),
             );
 
             state

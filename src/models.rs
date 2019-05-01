@@ -44,7 +44,6 @@ impl NewAnswer {
 pub struct AnswerInput {
     pub question_id: i32,
     pub title: String,
-    pub created: NaiveDateTime,
 }
 
 #[derive(Serialize, Deserialize)]
