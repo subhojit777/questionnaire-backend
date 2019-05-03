@@ -8,6 +8,7 @@ use actix_web::{
 };
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use diesel::result::Error as DieselError;
 use futures::future::IntoFuture;
 use futures::Future;
 use middleware::GitHubResponse;
@@ -48,8 +49,6 @@ pub fn post(
         .responder()
 }
 
-/// TODO: This is not yet fully implemented. It is supposed to return an answer based on an ID.
-/// The code inside explains how the oauth wrapper is supposed to work.
 pub fn get(
     data: Path<AnswerId>,
     req: HttpRequest<AppState>,
@@ -60,6 +59,7 @@ pub fn get(
         .from_err()
         .and_then(|response| match response {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
             Err(_) => Ok(HttpResponse::InternalServerError().into()),
         })
         .responder()
@@ -87,22 +87,19 @@ impl Handler<NewAnswer> for DbExecutor {
 }
 
 impl Message for AnswerId {
-    type Result = Result<Answer, error::Db>;
+    type Result = Result<Answer, DieselError>;
 }
 
 impl Handler<AnswerId> for DbExecutor {
-    type Result = Result<Answer, error::Db>;
+    type Result = Result<Answer, DieselError>;
 
     fn handle(&mut self, msg: AnswerId, _ctx: &mut Self::Context) -> Self::Result {
         use schema::answers::dsl::{answers, id};
 
         let connection: &MysqlConnection = &self.0.get().unwrap();
 
-        let result: QueryResult<Answer> = answers.filter(id.eq(&msg.0)).first(connection);
+        let result: Answer = answers.filter(id.eq(&msg.0)).first(connection)?;
 
-        match result {
-            Ok(answer) => Ok(answer),
-            Err(_) => Err(error::Db),
-        }
+        Ok(result)
     }
 }
