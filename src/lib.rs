@@ -23,18 +23,18 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
 };
 use dotenv::dotenv;
-use middleware::GitHubResponse;
+use middleware::GitHubUserId;
 use std::env;
 
 pub mod answers;
 pub mod error;
 pub mod github;
 pub mod helpers;
-pub mod index;
 pub mod middleware;
 pub mod models;
 pub mod schema;
 
+/// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 
 impl Actor for DbExecutor {
@@ -63,8 +63,7 @@ pub fn create_app() -> App<AppState> {
         .middleware(SessionStorage::new(
             CookieSessionBackend::signed(&[0; 32]).secure(false),
         ))
-        .middleware(GitHubResponse::default())
-        .resource("/", |r| r.method(Method::GET).f(index::get))
+        .middleware(GitHubUserId::default())
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)
         })
