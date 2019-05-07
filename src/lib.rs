@@ -1,3 +1,49 @@
+//! Backend of the Questionnaire app.
+//! ### API endpoints available:
+//!
+//! #### `/answers`
+//!
+//! **Method:** POST
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Content-type: application/json
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!   "question_id": 23,
+//!   "title": "Nothing is as it seems."
+//! }
+//! ```
+//!
+//! **Response:** 200 OK
+//!
+//! #### `/answers/{id}`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!    "id": 47,
+//!    "question_id": 23,
+//!    "title": "Nothing is as it seems.",
+//!    "user_id": 7,
+//!    "created": "2019-11-01T14:30:30"
+//! }
+//! ```
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
