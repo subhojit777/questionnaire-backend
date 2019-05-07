@@ -11,9 +11,25 @@ use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use futures::future::IntoFuture;
 use futures::Future;
-use middleware::GitHubResponse;
-use models::{Answer, AnswerId, AnswerInput, NewAnswer};
+use middleware::GitHubUserId;
+use models::{Answer, AnswerInput, GetAnswerById, NewAnswer};
 
+/// `/answers` POST
+///
+/// Headers:
+///
+/// Content type: application/json
+/// Authorization: token <access_token>
+///
+/// Body:
+/// ```json
+/// {
+///    "question_id": 23,
+///    "title": "Nothing is as it seems."
+/// }
+/// ```
+///
+/// Response: 200 OK
 pub fn post(
     data: Json<AnswerInput>,
     state: State<AppState>,
@@ -21,7 +37,7 @@ pub fn post(
 ) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
     let gh_user_id_session = req
         .session()
-        .get::<GitHubResponse>("gh_user_id")
+        .get::<GitHubUserId>("gh_user_id")
         .into_future();
 
     let now: DateTime<Utc> = Utc::now();
@@ -49,8 +65,24 @@ pub fn post(
         .responder()
 }
 
+/// `/answers/{id}` GET
+///
+/// Headers:
+///
+/// Authorization: token <access_token>
+///
+/// Response:
+/// ```json
+/// {
+///    "id": 47,
+///    "question_id": 23,
+///    "title": "Nothing is as it seems.",
+///    "user_id": 7,
+///    "created": "2019-11-01T14:30:30"
+/// }
+/// ```
 pub fn get(
-    data: Path<AnswerId>,
+    data: Path<GetAnswerById>,
     req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
     req.state()
@@ -86,14 +118,14 @@ impl Handler<NewAnswer> for DbExecutor {
     }
 }
 
-impl Message for AnswerId {
+impl Message for GetAnswerById {
     type Result = Result<Answer, DieselError>;
 }
 
-impl Handler<AnswerId> for DbExecutor {
+impl Handler<GetAnswerById> for DbExecutor {
     type Result = Result<Answer, DieselError>;
 
-    fn handle(&mut self, msg: AnswerId, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, msg: GetAnswerById, _ctx: &mut Self::Context) -> Self::Result {
         use schema::answers::dsl::{answers, id};
 
         let connection: &MysqlConnection = &self.0.get().unwrap();

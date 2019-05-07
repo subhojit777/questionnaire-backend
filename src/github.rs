@@ -15,6 +15,8 @@ use std::collections::HashMap;
 use std::env;
 use std::str;
 
+/// Redirect callback of the oauth-app.
+/// This would set the retrieved access token as a cookie.
 pub fn login_redirect(
     req: &HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
@@ -24,6 +26,8 @@ pub fn login_redirect(
     let github_client_secret =
         env::var("GITHUB_CLIENT_SECRET").expect("GITHUB_CLIENT_SECRET must be set.");
 
+    // Collect the query string parameters from the redirect URL, and store them in a HashMap.
+    // Throw error if it fails to find the session code in the URL.
     let mut query_string_map: HashMap<String, String> = HashMap::new();
     let query_strings: Vec<&str> = req.query_string().split('&').collect();
 
@@ -38,10 +42,12 @@ pub fn login_redirect(
         }
     }
 
-    let get_session_code: GetSessionCode = GetSessionCode {
+    let get_session_code: AuthenticationResponse = AuthenticationResponse {
         query_strings: query_string_map,
     };
 
+    // In exchange of the code, retrieve the access token.
+    // Throw error if it fails to retrieve the access token.
     get_session_code
         .from_err()
         .and_then(|code| {
@@ -78,13 +84,13 @@ pub fn login_redirect(
         .responder()
 }
 
-/// Obtain session code from GitHub.
+/// Stores the response from GitHub after successful authentication.
 #[derive(Debug)]
-struct GetSessionCode {
+struct AuthenticationResponse {
     query_strings: HashMap<String, String>,
 }
 
-impl Future for GetSessionCode {
+impl Future for AuthenticationResponse {
     type Item = String;
     type Error = OauthError;
 

@@ -20,6 +20,7 @@ pub struct Answer {
     pub created: NaiveDateTime,
 }
 
+/// Creates a new answer.
 #[derive(Insertable, Debug)]
 #[table_name = "answers"]
 pub struct NewAnswer {
@@ -40,12 +41,17 @@ impl NewAnswer {
     }
 }
 
+/// The structure of the body of JSON request for creating a new answer.
+///
+/// This is used for making the API request, and `NewAnswer` is used by the application for creating
+/// the answer in database.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AnswerInput {
     pub question_id: i32,
     pub title: String,
 }
 
+/// The structure of the body of JSON request for retrieving the access token for a session code.
 #[derive(Serialize, Deserialize)]
 pub struct GHAccessTokenBody {
     client_id: String,
@@ -65,5 +71,6 @@ impl GHAccessTokenBody {
     }
 }
 
+/// This defines an actor for retrieving answer from database by id.
 #[derive(Queryable, Deserialize)]
-pub struct AnswerId(pub i32);
+pub struct GetAnswerById(pub i32);

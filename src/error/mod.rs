@@ -3,7 +3,7 @@ use actix_web::http::StatusCode;
 use actix_web::{error::ResponseError, HttpResponse};
 use std::fmt::{Display, Formatter, Result};
 
-// Custom error handler for failed db transactions.
+/// Custom error handler for failed db transactions.
 #[derive(Fail, Debug)]
 pub struct Db;
 

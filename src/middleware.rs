@@ -6,23 +6,24 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::{Client, StatusCode};
 use serde_derive::*;
 
+/// Sets the GitHub user id in request - if not already present.
 #[derive(Deserialize, Serialize, Debug)]
-pub struct GitHubResponse {
+pub struct GitHubUserId {
     pub id: i32,
 }
 
-impl GitHubResponse {
+impl GitHubUserId {
     pub fn default() -> Self {
-        GitHubResponse { id: -1 }
+        GitHubUserId { id: -1 }
     }
 }
 
-impl<S> Middleware<S> for GitHubResponse {
+impl<S> Middleware<S> for GitHubUserId {
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
         if let Some(token) = req.headers().get("authorization") {
             match token.to_str() {
                 Ok(access_token) => {
-                    if let Some(_) = req.session().get::<GitHubResponse>("gh_user_id")? {
+                    if let Some(_) = req.session().get::<GitHubUserId>("gh_user_id")? {
                     } else {
                         // Using synchronous reqwest to retrieve user_id from GitHub.
                         // Actix doesn't yet provides a synchronous API. And doing it using futures
@@ -41,7 +42,7 @@ impl<S> Middleware<S> for GitHubResponse {
 
                         req.session().set(
                             "gh_user_id",
-                            response.json::<GitHubResponse>().expect(
+                            response.json::<GitHubUserId>().expect(
                                 "Unable to parse user id from response. Please check logs for details.",
                             ),
                         )?;
