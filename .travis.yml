@@ -3,5 +3,11 @@ language: rust
 rust:
   - stable
 
+install:
+  - sudo apt update && sudo apt upgrade openssl
+
+before_script:
+  - openssl version
+
 script:
   - make travis
