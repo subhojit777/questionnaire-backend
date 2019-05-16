@@ -4,7 +4,7 @@ rust:
   - stable
 
 install:
-  - sudo apt update && sudo apt upgrade openssl
+  - sudo apt-get install -y openssl
 
 before_script:
   - openssl version
