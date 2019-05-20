@@ -12,11 +12,13 @@ before_script:
 script:
   - make travis
 
-deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  keep_history: true
-  local_dir: docs
-  on:
-    branch: master
+# Upload docs
+after_success:
+  - |
+    if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" = "false" && "$TRAVIS_BRANCH" == "master" && "$TRAVIS_RUST_VERSION" == "stable" ]]; then
+      cargo doc --no-deps --all-features &&
+      echo "<meta http-equiv=refresh content=0;url=questionnaire_rs/index.html>" > target/doc/index.html &&
+      git clone https://github.com/davisp/ghp-import.git &&
+      ./ghp-import/ghp_import.py -n -p -f -m "Documentation upload" -r https://"$GITHUB_TOKEN@github.com/$TRAVIS_REPO_SLUG.git" target/doc &&
+      echo "Uploaded documentation"
+    fi
