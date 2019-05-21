@@ -79,6 +79,7 @@ pub mod helpers;
 pub mod middleware;
 pub mod models;
 pub mod schema;
+pub mod session;
 
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
@@ -119,4 +120,5 @@ pub fn create_app() -> App<AppState> {
         .resource("/gh-redirect", |r| {
             r.method(Method::GET).a(github::login_redirect)
         })
+        .resource("/logout", |r| r.method(Method::GET).f(session::logout))
 }
