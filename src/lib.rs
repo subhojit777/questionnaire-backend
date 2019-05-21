@@ -93,6 +93,8 @@ pub mod models;
 pub mod schema;
 pub mod session;
 
+const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
+
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
 

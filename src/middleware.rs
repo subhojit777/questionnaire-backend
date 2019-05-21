@@ -5,6 +5,7 @@ use actix_web::{Error, HttpRequest};
 use reqwest::header::AUTHORIZATION;
 use reqwest::{Client, StatusCode};
 use serde_derive::*;
+use GH_USER_SESSION_ID_KEY;
 
 /// Sets the GitHub user id in request - if not already present.
 #[derive(Deserialize, Serialize, Debug)]
@@ -23,7 +24,7 @@ impl<S> Middleware<S> for GitHubUserId {
         if let Some(token) = req.headers().get("authorization") {
             match token.to_str() {
                 Ok(access_token) => {
-                    if let Some(_) = req.session().get::<GitHubUserId>("gh_user_id")? {
+                    if let Some(_) = req.session().get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)? {
                     } else {
                         // Using synchronous reqwest to retrieve user_id from GitHub.
                         // Actix doesn't yet provides a synchronous API. And doing it using futures
@@ -41,7 +42,7 @@ impl<S> Middleware<S> for GitHubUserId {
                         }
 
                         req.session().set(
-                            "gh_user_id",
+                            GH_USER_SESSION_ID_KEY,
                             response.json::<GitHubUserId>().expect(
                                 "Unable to parse user id from response. Please check logs for details.",
                             ),

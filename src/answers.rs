@@ -13,6 +13,7 @@ use futures::future::IntoFuture;
 use futures::Future;
 use middleware::GitHubUserId;
 use models::{Answer, AnswerInput, GetAnswerById, NewAnswer};
+use GH_USER_SESSION_ID_KEY;
 
 /// `/answers` POST
 ///
@@ -37,7 +38,7 @@ pub fn post(
 ) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
     let gh_user_id_session = req
         .session()
-        .get::<GitHubUserId>("gh_user_id")
+        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
         .into_future();
 
     let now: DateTime<Utc> = Utc::now();
