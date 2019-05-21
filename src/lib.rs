@@ -44,6 +44,18 @@
 //!    "created": "2019-11-01T14:30:30"
 //! }
 //! ```
+//!
+//! #### `/logout`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:** 200 OK
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
