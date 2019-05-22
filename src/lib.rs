@@ -44,6 +44,18 @@
 //!    "created": "2019-11-01T14:30:30"
 //! }
 //! ```
+//!
+//! #### `/logout`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:** 200 OK
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -79,6 +91,9 @@ pub mod helpers;
 pub mod middleware;
 pub mod models;
 pub mod schema;
+pub mod session;
+
+const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
 
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
@@ -119,4 +134,5 @@ pub fn create_app() -> App<AppState> {
         .resource("/gh-redirect", |r| {
             r.method(Method::GET).a(github::login_redirect)
         })
+        .resource("/logout", |r| r.method(Method::GET).f(session::logout))
 }
