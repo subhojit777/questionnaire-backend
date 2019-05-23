@@ -9,6 +9,14 @@ table! {
 }
 
 table! {
+    presentations (id) {
+        id -> Integer,
+        title -> Varchar,
+        created -> Timestamp,
+    }
+}
+
+table! {
     questions (id) {
         id -> Integer,
         title -> Varchar,
@@ -16,4 +24,8 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(answers, questions,);
+allow_tables_to_appear_in_same_query!(
+    answers,
+    presentations,
+    questions,
+);

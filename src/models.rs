@@ -74,3 +74,27 @@ impl GHAccessTokenBody {
 /// This defines an actor for retrieving answer from database by id.
 #[derive(Queryable, Deserialize)]
 pub struct GetAnswerById(pub i32);
+
+/// Presentation model.
+#[derive(Queryable, Serialize, Deserialize)]
+pub struct Presentation {
+    id: i32,
+    title: String,
+    created: NaiveDateTime,
+}
+
+/// Creates a new presentation.
+#[derive(Insertable, Debug)]
+#[table_name = "presentations"]
+pub struct NewPresentation {
+    title: String,
+    created: NaiveDateTime,
+}
+
+/// The structure of the body of JSON request for creating a new presentation.
+///
+/// This is used for making the API request, and `NewPresentation` is used by the application for
+/// creating the presentation in database.
+pub struct PresentationInput {
+    title: String,
+}
