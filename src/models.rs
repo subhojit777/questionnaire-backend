@@ -80,6 +80,7 @@ pub struct GetAnswerById(pub i32);
 pub struct Presentation {
     id: i32,
     title: String,
+    user_id: i32,
     created: NaiveDateTime,
 }
 
@@ -88,6 +89,7 @@ pub struct Presentation {
 #[table_name = "presentations"]
 pub struct NewPresentation {
     title: String,
+    user_id: i32,
     created: NaiveDateTime,
 }
 

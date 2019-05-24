@@ -12,6 +12,7 @@ table! {
     presentations (id) {
         id -> Integer,
         title -> Varchar,
+        user_id -> Integer,
         created -> Timestamp,
     }
 }
