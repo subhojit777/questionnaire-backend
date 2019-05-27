@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 use diesel::Insertable;
 use diesel::Queryable;
 use schema::answers;
+use schema::presentations;
 use serde_derive::*;
 
 #[derive(Queryable)]
@@ -97,6 +98,17 @@ pub struct NewPresentation {
 ///
 /// This is used for making the API request, and `NewPresentation` is used by the application for
 /// creating the presentation in database.
+#[derive(Deserialize, Serialize, Debug)]
 pub struct PresentationInput {
-    title: String,
+    pub title: String,
+}
+
+impl NewPresentation {
+    pub fn new(title: String, user_id: i32, created: NaiveDateTime) -> Self {
+        NewPresentation {
+            title,
+            user_id,
+            created,
+        }
+    }
 }

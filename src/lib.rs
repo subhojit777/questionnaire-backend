@@ -56,6 +56,27 @@
 //! ```
 //!
 //! **Response:** 200 OK
+//!
+//! #### `/presentations`
+//!
+//! **Method:** POST
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Content-type: application/json
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!   "title": "New Presentation"
+//! }
+//! ```
+//!
+//! **Response:** 200 OK
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -90,6 +111,7 @@ pub mod github;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
+pub mod presentations;
 pub mod schema;
 pub mod session;
 
@@ -135,4 +157,7 @@ pub fn create_app() -> App<AppState> {
             r.method(Method::GET).a(github::login_redirect)
         })
         .resource("/logout", |r| r.method(Method::GET).f(session::logout))
+        .resource("/presentations", |r| {
+            r.method(Method::POST).with_async(presentations::post)
+        })
 }
