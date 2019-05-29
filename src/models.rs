@@ -79,10 +79,10 @@ pub struct GetAnswerById(pub i32);
 /// Presentation model.
 #[derive(Queryable, Serialize, Deserialize)]
 pub struct Presentation {
-    id: i32,
-    title: String,
-    user_id: i32,
-    created: NaiveDateTime,
+    pub id: i32,
+    pub title: String,
+    pub user_id: i32,
+    pub created: NaiveDateTime,
 }
 
 /// Creates a new presentation.
@@ -112,3 +112,7 @@ impl NewPresentation {
         }
     }
 }
+
+/// Defines an actor to retrieve presentation from database by id.
+#[derive(Queryable, Deserialize)]
+pub struct GetPresentation(pub i32);
