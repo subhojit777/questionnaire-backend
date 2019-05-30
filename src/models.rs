@@ -3,16 +3,19 @@ use diesel::Insertable;
 use diesel::Queryable;
 use schema::answers;
 use schema::presentations;
+use schema::questions;
 use serde_derive::*;
 
-#[derive(Queryable)]
+#[derive(Queryable, Identifiable)]
+#[table_name = "questions"]
 pub struct Questions {
     pub id: i32,
     pub title: String,
     pub created: NaiveDateTime,
 }
 
-#[derive(Queryable, Serialize, Deserialize)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable)]
+#[table_name = "answers"]
 pub struct Answer {
     pub id: i32,
     pub question_id: i32,
@@ -77,7 +80,8 @@ impl GHAccessTokenBody {
 pub struct GetAnswerById(pub i32);
 
 /// Presentation model.
-#[derive(Queryable, Serialize, Deserialize)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable)]
+#[table_name = "presentations"]
 pub struct Presentation {
     pub id: i32,
     pub title: String,
