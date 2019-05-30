@@ -56,6 +56,48 @@
 //! ```
 //!
 //! **Response:** 200 OK
+//!
+//! #### `/presentations`
+//!
+//! **Method:** POST
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Content-type: application/json
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!   "title": "New Presentation"
+//! }
+//! ```
+//!
+//! **Response:** 200 OK
+//!
+//! #### `/presentations/{id}`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!    "id": 47,
+//!    "title": "New Presentation",
+//!    "user_id": 7,
+//!    "created": "2019-11-01T14:30:30"
+//! }
+//! ```
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -90,6 +132,7 @@ pub mod github;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
+pub mod presentations;
 pub mod schema;
 pub mod session;
 
@@ -135,4 +178,10 @@ pub fn create_app() -> App<AppState> {
             r.method(Method::GET).a(github::login_redirect)
         })
         .resource("/logout", |r| r.method(Method::GET).f(session::logout))
+        .resource("/presentations", |r| {
+            r.method(Method::POST).with_async(presentations::post)
+        })
+        .resource("presentations/{id}", |r| {
+            r.method(Method::GET).with_async(presentations::get)
+        })
 }
