@@ -6,12 +6,14 @@ use schema::presentations;
 use schema::questions;
 use serde_derive::*;
 
-#[derive(Queryable, Identifiable)]
+#[derive(Queryable, Identifiable, Associations)]
+#[belongs_to(Presentation, foreign_key = "presentation_id")]
 #[table_name = "questions"]
 pub struct Questions {
     pub id: i32,
     pub title: String,
     pub created: NaiveDateTime,
+    pub presentation_id: i32,
 }
 
 #[derive(Queryable, Serialize, Deserialize, Identifiable)]

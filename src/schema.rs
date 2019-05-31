@@ -22,7 +22,12 @@ table! {
         id -> Integer,
         title -> Varchar,
         created -> Timestamp,
+        presentation_id -> Integer,
     }
 }
 
-allow_tables_to_appear_in_same_query!(answers, presentations, questions,);
+allow_tables_to_appear_in_same_query!(
+    answers,
+    presentations,
+    questions,
+);
