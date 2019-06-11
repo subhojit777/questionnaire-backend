@@ -14,6 +14,7 @@ pub struct Questions {
     pub title: String,
     pub created: NaiveDateTime,
     pub presentation_id: i32,
+    pub user_id: i32,
 }
 
 #[derive(Queryable, Serialize, Deserialize, Identifiable)]
