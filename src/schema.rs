@@ -23,6 +23,7 @@ table! {
         title -> Varchar,
         created -> Timestamp,
         presentation_id -> Integer,
+        user_id -> Integer,
     }
 }
 
