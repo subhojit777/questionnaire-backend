@@ -17,6 +17,37 @@ pub struct Questions {
     pub user_id: i32,
 }
 
+/// Creates a new question.
+#[derive(Insertable, Debug)]
+#[table_name = "questions"]
+pub struct NewQuestion {
+    pub title: String,
+    pub created: NaiveDateTime,
+    pub presentation_id: i32,
+    pub user_id: i32,
+}
+
+impl NewQuestion {
+    pub fn new(title: String, created: NaiveDateTime, presentation_id: i32, user_id: i32) -> Self {
+        NewQuestion {
+            title,
+            created,
+            presentation_id,
+            user_id,
+        }
+    }
+}
+
+/// The structure of the body of JSON request for creating a new question.
+///
+/// This is used for making the API request, and `NewQuestion` is used by the application for
+/// creating the question in database.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct NewQuestionJson {
+    title: String,
+    presentation_id: i32,
+}
+
 #[derive(Queryable, Serialize, Deserialize, Identifiable)]
 #[table_name = "answers"]
 pub struct Answer {
