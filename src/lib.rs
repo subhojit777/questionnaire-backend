@@ -104,6 +104,7 @@ extern crate reqwest;
 extern crate serde_json;
 #[macro_use]
 extern crate diesel;
+extern crate actix;
 extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
@@ -133,6 +134,7 @@ pub mod helpers;
 pub mod middleware;
 pub mod models;
 pub mod presentations;
+pub mod questions;
 pub mod schema;
 pub mod session;
 
