@@ -44,8 +44,8 @@ impl NewQuestion {
 /// creating the question in database.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct NewQuestionJson {
-    title: String,
-    presentation_id: i32,
+    pub title: String,
+    pub presentation_id: i32,
 }
 
 #[derive(Queryable, Serialize, Deserialize, Identifiable)]
