@@ -4,6 +4,7 @@ use actix_web::AsyncResponder;
 use actix_web::{Error, HttpRequest, HttpResponse, Json, State};
 use chrono::Utc;
 use diesel::query_dsl::RunQueryDsl;
+use diesel::result::Error as DieselError;
 use diesel::MysqlConnection;
 use futures::Future;
 use futures::IntoFuture;
@@ -13,11 +14,11 @@ use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
 impl Message for NewQuestion {
-    type Result = Result<(), super::error::Db>;
+    type Result = Result<(), DieselError>;
 }
 
 impl Handler<NewQuestion> for DbExecutor {
-    type Result = Result<(), super::error::Db>;
+    type Result = Result<(), DieselError>;
 
     fn handle(&mut self, msg: NewQuestion, _ctx: &mut Self::Context) -> Self::Result {
         use schema::questions::dsl::questions;
