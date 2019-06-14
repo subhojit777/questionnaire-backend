@@ -6,7 +6,7 @@ use schema::presentations;
 use schema::questions;
 use serde_derive::*;
 
-#[derive(Queryable, Identifiable, Associations)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations)]
 #[belongs_to(Presentation, foreign_key = "presentation_id")]
 #[table_name = "questions"]
 pub struct Questions {
@@ -47,6 +47,10 @@ pub struct NewQuestionJson {
     pub title: String,
     pub presentation_id: i32,
 }
+
+/// This defines an actor for retrieving question from database by id.
+#[derive(Queryable, Deserialize)]
+pub struct GetQuestion(pub i32);
 
 #[derive(Queryable, Serialize, Deserialize, Identifiable)]
 #[table_name = "answers"]

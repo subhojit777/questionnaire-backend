@@ -3,13 +3,12 @@ use actix_web::middleware::session::RequestSession;
 use actix_web::AsyncResponder;
 use actix_web::{Error, HttpRequest, HttpResponse, Json, State};
 use chrono::Utc;
-use diesel::query_dsl::RunQueryDsl;
+use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use diesel::MysqlConnection;
 use futures::Future;
 use futures::IntoFuture;
 use middleware::GitHubUserId;
-use models::{NewQuestion, NewQuestionJson};
+use models::{GetQuestion, NewQuestion, NewQuestionJson, Questions};
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
@@ -30,6 +29,24 @@ impl Handler<NewQuestion> for DbExecutor {
             .expect("Error saving the question");
 
         Ok(())
+    }
+}
+
+impl Message for GetQuestion {
+    type Result = Result<Questions, DieselError>;
+}
+
+impl Handler<GetQuestion> for DbExecutor {
+    type Result = Result<Questions, DieselError>;
+
+    fn handle(&mut self, msg: GetQuestion, _ctx: &mut Self::Context) -> Self::Result {
+        use schema::questions::dsl::{id, questions};
+        let connection: &MysqlConnection =
+            &self.0.get().expect("Unable to get database connection.");
+
+        let result: Questions = questions.filter(id.eq(&msg.0)).first(connection)?;
+
+        Ok(result)
     }
 }
 
