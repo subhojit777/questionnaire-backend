@@ -98,12 +98,57 @@
 //!    "created": "2019-11-01T14:30:30"
 //! }
 //! ```
+//!
+//! #### ``/questions`
+//!
+//! **Method:** POST
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Content type: application/json
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!    "title": "New Question",
+//!    "presentation_id": 1,
+//! }
+//! ```
+//!
+//! **Response:** 200 OK
+//!
+//! #### `/questions/{id}`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!    "id": 23,
+//!    "title": "New Question",
+//!    "created": "2019-11-01T14:30:30",
+//!    "presentation_id": 3,
+//!    "user_id": 7,
+//! }
+//! ```
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
 extern crate serde_json;
 #[macro_use]
 extern crate diesel;
+extern crate actix;
 extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
@@ -133,6 +178,7 @@ pub mod helpers;
 pub mod middleware;
 pub mod models;
 pub mod presentations;
+pub mod questions;
 pub mod schema;
 pub mod session;
 
@@ -183,5 +229,11 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("presentations/{id}", |r| {
             r.method(Method::GET).with_async(presentations::get)
+        })
+        .resource("/questions", |r| {
+            r.method(Method::POST).with_async(questions::post)
+        })
+        .resource("/questions/{id}", |r| {
+            r.method(Method::GET).with_async(questions::get)
         })
 }
