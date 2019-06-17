@@ -120,6 +120,28 @@
 //! ```
 //!
 //! **Response:** 200 OK
+//!
+//! #### `/questions/{id}`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!    "id": 23,
+//!    "title": "New Question",
+//!    "created": "2019-11-01T14:30:30",
+//!    "presentation_id": 3,
+//!    "user_id": 7,
+//! }
+//! ```
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -210,5 +232,8 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("/questions", |r| {
             r.method(Method::POST).with_async(questions::post)
+        })
+        .resource("/questions/{id}", |r| {
+            r.method(Method::GET).with_async(questions::get)
         })
 }

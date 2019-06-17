@@ -1,6 +1,6 @@
 use actix::{Handler, Message};
 use actix_web::middleware::session::RequestSession;
-use actix_web::AsyncResponder;
+use actix_web::{AsyncResponder, Path};
 use actix_web::{Error, HttpRequest, HttpResponse, Json, State};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -97,6 +97,40 @@ pub fn post(
                     Ok(_) => Ok(HttpResponse::Ok().finish()),
                     Err(_) => Ok(HttpResponse::InternalServerError().into()),
                 })
+        })
+        .responder()
+}
+
+/// `/questions/{id}` GET
+///
+/// Headers:
+///
+/// Authorization: token <access_token>
+///
+/// Response:
+/// ```json
+/// {
+///    "id": 23,
+///    "title": "New Question",
+///    "created": "2019-11-01T14:30:30",
+///    "presentation_id": 3,
+///    "user_id": 7,
+/// }
+/// ```
+pub fn get(
+    data: Path<GetQuestion>,
+    req: HttpRequest<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let state: &AppState = req.state();
+
+    state
+        .db
+        .send(data.into_inner())
+        .from_err()
+        .and_then(|response| match response {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
         })
         .responder()
 }
