@@ -99,7 +99,7 @@
 //! }
 //! ```
 //!
-//! #### ``/questions`
+//! #### `/questions`
 //!
 //! **Method:** POST
 //!
@@ -142,6 +142,28 @@
 //!    "user_id": 7,
 //! }
 //! ```
+//!
+//! #### `/options`
+//!
+//! **Method:** POST
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Content type: application/json
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!    "data": "Option 1",
+//!    "question_id": 1,
+//! }
+//! ```
+//!
+//! **Response:** 200 OK
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -177,6 +199,7 @@ pub mod github;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
+pub mod options;
 pub mod presentations;
 pub mod questions;
 pub mod schema;
@@ -235,5 +258,8 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("/questions/{id}", |r| {
             r.method(Method::GET).with_async(questions::get)
+        })
+        .resource("/options", |r| {
+            r.method(Method::POST).with_async(options::post)
         })
 }
