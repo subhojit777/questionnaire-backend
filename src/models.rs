@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 use diesel::Insertable;
 use diesel::Queryable;
 use schema::answers;
+use schema::options;
 use schema::presentations;
 use schema::questions;
 use serde_derive::*;
@@ -158,3 +159,50 @@ impl NewPresentation {
 /// Defines an actor to retrieve presentation from database by id.
 #[derive(Queryable, Deserialize)]
 pub struct GetPresentation(pub i32);
+
+/// Option model.
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations)]
+#[belongs_to(Questions, foreign_key = "question_id")]
+#[table_name = "options"]
+pub struct Option {
+    pub id: i32,
+    pub data: String,
+    pub user_id: i32,
+    pub question_id: i32,
+    pub created: NaiveDateTime,
+}
+
+/// Creates a new option.
+#[derive(Insertable, Debug)]
+#[table_name = "options"]
+pub struct NewOption {
+    pub data: String,
+    pub user_id: i32,
+    pub question_id: i32,
+    pub created: NaiveDateTime,
+}
+
+impl NewOption {
+    pub fn new(data: String, user_id: i32, question_id: i32, created: NaiveDateTime) -> Self {
+        NewOption {
+            data,
+            user_id,
+            question_id,
+            created,
+        }
+    }
+}
+
+/// Defines the structure of the body of JSON request for creating a new option.
+///
+/// This is used for making the API request, and `NewOption` is used by the application for
+/// creating the option in database.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct NewOptionJson {
+    pub data: String,
+    pub question_id: i32,
+}
+
+/// Defines an actor to retrieve an option from database by id.
+#[derive(Queryable, Deserialize)]
+pub struct GetOption(pub i32);

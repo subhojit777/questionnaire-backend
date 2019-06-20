@@ -9,6 +9,16 @@ table! {
 }
 
 table! {
+    options (id) {
+        id -> Integer,
+        data -> Varchar,
+        user_id -> Integer,
+        question_id -> Integer,
+        created -> Timestamp,
+    }
+}
+
+table! {
     presentations (id) {
         id -> Integer,
         title -> Varchar,
@@ -29,6 +39,7 @@ table! {
 
 allow_tables_to_appear_in_same_query!(
     answers,
+    options,
     presentations,
     questions,
 );

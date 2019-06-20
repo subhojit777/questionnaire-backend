@@ -54,7 +54,7 @@ impl<S> Middleware<S> for GitHubUserId {
                 Err(_) => return Err(Error::from(Oauth::BadRequest)),
             };
         } else {
-            Ok(Started::Done)
+            Err(Error::from(Oauth::BadRequest))
         }
     }
 }

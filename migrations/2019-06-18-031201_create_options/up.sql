@@ -1,0 +1,7 @@
+CREATE TABLE options (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  data VARCHAR(255) NOT NULL,
+  user_id INT NOT NULL,
+  question_id INT NOT NULL,
+  created TIMESTAMP NOT NULL
+)

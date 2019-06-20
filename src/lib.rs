@@ -99,7 +99,7 @@
 //! }
 //! ```
 //!
-//! #### ``/questions`
+//! #### `/questions`
 //!
 //! **Method:** POST
 //!
@@ -142,6 +142,50 @@
 //!    "user_id": 7,
 //! }
 //! ```
+//!
+//! #### `/options`
+//!
+//! **Method:** POST
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Content type: application/json
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!    "data": "Option 1",
+//!    "question_id": 1,
+//! }
+//! ```
+//!
+//! **Response:** 200 OK
+//!
+//! #### `/options/{id}`
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!    "id": 12,
+//!    "data": "Option 1",
+//!    "user_id": 9,
+//!    "question_id": 1,
+//!    "created": "2019-06-19T03:40:50"
+//! }
+//! ```
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -177,6 +221,7 @@ pub mod github;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
+pub mod options;
 pub mod presentations;
 pub mod questions;
 pub mod schema;
@@ -235,5 +280,11 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("/questions/{id}", |r| {
             r.method(Method::GET).with_async(questions::get)
+        })
+        .resource("/options", |r| {
+            r.method(Method::POST).with_async(options::post)
+        })
+        .resource("/options/{id}", |r| {
+            r.method(Method::GET).with_async(options::get)
         })
 }
