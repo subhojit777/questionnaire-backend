@@ -202,3 +202,7 @@ pub struct NewOptionJson {
     pub data: String,
     pub question_id: i32,
 }
+
+/// Defines an actor to retrieve an option from database by id.
+#[derive(Queryable, Deserialize)]
+pub struct GetOption(pub i32);
