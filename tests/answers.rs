@@ -11,7 +11,7 @@ fn post() {
     let mut server = TestServer::with_factory(questionnaire_rs::create_app);
 
     let answer_form = AnswerInput {
-        question_id: 10,
+        option_id: 10,
         title: String::from("Some answer"),
         user_id: 1,
     };

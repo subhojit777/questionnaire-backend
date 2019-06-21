@@ -1,10 +1,9 @@
 table! {
     answers (id) {
         id -> Integer,
-        question_id -> Integer,
-        title -> Varchar,
         user_id -> Integer,
         created -> Timestamp,
+        option_id -> Integer,
     }
 }
 

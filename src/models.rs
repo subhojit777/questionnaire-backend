@@ -53,33 +53,32 @@ pub struct NewQuestionJson {
 #[derive(Queryable, Deserialize)]
 pub struct GetQuestion(pub i32);
 
-#[derive(Queryable, Serialize, Deserialize, Identifiable)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations)]
+#[belongs_to(Option, foreign_key = "option_id")]
 #[table_name = "answers"]
 pub struct Answer {
     pub id: i32,
-    pub question_id: i32,
-    pub title: String,
     pub user_id: i32,
     pub created: NaiveDateTime,
+    pub option_id: i32,
 }
 
 /// Creates a new answer.
-#[derive(Insertable, Debug)]
+#[derive(Insertable, Debug, Associations)]
+#[belongs_to(Option, foreign_key = "option_id")]
 #[table_name = "answers"]
 pub struct NewAnswer {
-    pub question_id: i32,
-    pub title: String,
     pub user_id: i32,
     pub created: NaiveDateTime,
+    pub option_id: i32,
 }
 
 impl NewAnswer {
-    pub fn new(question_id: i32, title: String, user_id: i32, created: NaiveDateTime) -> Self {
+    pub fn new(user_id: i32, created: NaiveDateTime, option_id: i32) -> Self {
         NewAnswer {
-            question_id,
-            title,
             user_id,
             created,
+            option_id,
         }
     }
 }
@@ -90,8 +89,7 @@ impl NewAnswer {
 /// the answer in database.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AnswerInput {
-    pub question_id: i32,
-    pub title: String,
+    pub option_id: i32,
 }
 
 /// The structure of the body of JSON request for retrieving the access token for a session code.
