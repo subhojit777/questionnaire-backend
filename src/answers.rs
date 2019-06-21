@@ -25,8 +25,7 @@ use GH_USER_SESSION_ID_KEY;
 /// Body:
 /// ```json
 /// {
-///    "question_id": 23,
-///    "title": "Nothing is as it seems."
+///    "option_id": 23
 /// }
 /// ```
 ///
@@ -47,12 +46,8 @@ pub fn post(
         .from_err()
         .and_then(move |gh_user_id| {
             let input = data.into_inner();
-            let new_answer = NewAnswer::new(
-                input.question_id,
-                input.title,
-                gh_user_id.unwrap().id,
-                now.naive_utc(),
-            );
+            let new_answer =
+                NewAnswer::new(gh_user_id.unwrap().id, now.naive_utc(), input.option_id);
 
             state
                 .db
@@ -76,10 +71,9 @@ pub fn post(
 /// ```json
 /// {
 ///    "id": 47,
-///    "question_id": 23,
-///    "title": "Nothing is as it seems.",
 ///    "user_id": 7,
-///    "created": "2019-11-01T14:30:30"
+///    "created": "2019-11-01T14:30:30",
+///    "option_id": 23
 /// }
 /// ```
 pub fn get(

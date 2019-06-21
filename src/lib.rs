@@ -16,8 +16,7 @@
 //!
 //! ```json
 //! {
-//!   "question_id": 23,
-//!   "title": "Nothing is as it seems."
+//!   "option_id": 23
 //! }
 //! ```
 //!
@@ -38,10 +37,9 @@
 //! ```json
 //! {
 //!    "id": 47,
-//!    "question_id": 23,
-//!    "title": "Nothing is as it seems.",
 //!    "user_id": 7,
-//!    "created": "2019-11-01T14:30:30"
+//!    "created": "2019-11-01T14:30:30",
+//!    "option_id": 23
 //! }
 //! ```
 //!
