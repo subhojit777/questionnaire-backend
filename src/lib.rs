@@ -197,6 +197,7 @@ extern crate failure;
 extern crate futures;
 extern crate serde;
 extern crate serde_derive;
+extern crate time;
 
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use actix_web::{
@@ -212,6 +213,7 @@ use diesel::{
 use dotenv::dotenv;
 use middleware::GitHubUserId;
 use std::env;
+use time::Duration;
 
 pub mod answers;
 pub mod error;
@@ -254,7 +256,9 @@ pub fn create_app() -> App<AppState> {
     App::with_state(AppState { db: addr.clone() })
         .middleware(Logger::default())
         .middleware(SessionStorage::new(
-            CookieSessionBackend::signed(&[0; 32]).secure(false),
+            CookieSessionBackend::signed(&[0; 32])
+                .secure(false)
+                .max_age(Duration::days(1)),
         ))
         .middleware(GitHubUserId::default())
         .resource("/answers", |r| {
