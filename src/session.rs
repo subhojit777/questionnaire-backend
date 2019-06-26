@@ -1,6 +1,6 @@
 use actix_web::middleware::session::RequestSession;
 use actix_web::{HttpRequest, HttpResponse};
-use {AppState, GH_USER_SESSION_ID_KEY};
+use AppState;
 
 /// Logs out the user.
 ///
@@ -14,6 +14,6 @@ use {AppState, GH_USER_SESSION_ID_KEY};
 ///
 /// Response: 200 OK
 pub fn logout(req: &HttpRequest<AppState>) -> HttpResponse {
-    req.session().remove(GH_USER_SESSION_ID_KEY);
+    req.session().clear();
     HttpResponse::Ok().finish()
 }
