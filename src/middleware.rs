@@ -5,7 +5,7 @@ use actix_web::{Error, HttpRequest};
 use reqwest::header::AUTHORIZATION;
 use reqwest::{Client, StatusCode};
 use serde_derive::*;
-use GH_USER_SESSION_ID_KEY;
+use {GH_USER_SESSION_ID_KEY, SAFE_PATHS};
 
 /// Sets the GitHub user id in request - if not already present.
 #[derive(Deserialize, Serialize, Debug)]
@@ -21,6 +21,10 @@ impl GitHubUserId {
 
 impl<S> Middleware<S> for GitHubUserId {
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
+        if SAFE_PATHS.contains(&req.path()) {
+            return Ok(Started::Done);
+        }
+
         if let Some(token) = req.headers().get("authorization") {
             match token.to_str() {
                 Ok(access_token) => {

@@ -228,6 +228,7 @@ pub mod schema;
 pub mod session;
 
 const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
+const SAFE_PATHS: [&str; 1] = ["/gh-redirect"];
 
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
