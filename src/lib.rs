@@ -184,6 +184,20 @@
 //!    "created": "2019-06-19T03:40:50"
 //! }
 //! ```
+//!
+//! #### `/gh-access-token`
+//!
+//! **Method:** GET
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! code: GITHUB_LOGIN_CODE obtained from https://github.com/login/oauth/authorize
+//! ```
+//!
+//! **Response:**
+//!
+//! GITHUB_ACCESS_TOKEN in JSON.
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -200,6 +214,7 @@ extern crate serde_derive;
 extern crate time;
 
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
+use actix_web::middleware::DefaultHeaders;
 use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
     http::Method,
@@ -217,7 +232,7 @@ use time::Duration;
 
 pub mod answers;
 pub mod error;
-pub mod github;
+pub mod github_access_token;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
@@ -228,7 +243,7 @@ pub mod schema;
 pub mod session;
 
 const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
-const SAFE_PATHS: [&str; 1] = ["/gh-redirect"];
+const SAFE_PATHS: [&str; 1] = ["/gh-access-token"];
 
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
@@ -245,6 +260,7 @@ pub fn create_app() -> App<AppState> {
     dotenv().ok();
     env_logger::init();
 
+    let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
 
@@ -262,14 +278,12 @@ pub fn create_app() -> App<AppState> {
                 .max_age(Duration::days(1)),
         ))
         .middleware(GitHubUserId::default())
+        .middleware(DefaultHeaders::new().header("Access-Control-Allow-Origin", front_end_base_url))
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)
         })
         .resource("/answers/{id}", |r| {
             r.method(Method::GET).with_async(answers::get)
-        })
-        .resource("/gh-redirect", |r| {
-            r.method(Method::GET).a(github::login_redirect)
         })
         .resource("/logout", |r| r.method(Method::GET).f(session::logout))
         .resource("/presentations", |r| {
@@ -289,5 +303,9 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("/options/{id}", |r| {
             r.method(Method::GET).with_async(options::get)
+        })
+        .resource("/gh-access-token", |r| {
+            r.method(Method::GET)
+                .with_async(github_access_token::get_access_token)
         })
 }
