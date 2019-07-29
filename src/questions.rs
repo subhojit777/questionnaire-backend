@@ -8,7 +8,9 @@ use diesel::result::Error as DieselError;
 use futures::Future;
 use futures::IntoFuture;
 use middleware::GitHubUserId;
-use models::{GetQuestion, NewQuestion, NewQuestionJson, Questions};
+use models::{
+    GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Presentation, Questions,
+};
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
@@ -47,6 +49,27 @@ impl Handler<GetQuestion> for DbExecutor {
         let result: Questions = questions.filter(id.eq(&msg.0)).first(connection)?;
 
         Ok(result)
+    }
+}
+
+impl Message for GetQuestionByPresentation {
+    type Result = Result<Vec<Questions>, DieselError>;
+}
+
+impl Handler<GetQuestionByPresentation> for DbExecutor {
+    type Result = Result<Vec<Questions>, DieselError>;
+
+    fn handle(&mut self, msg: GetQuestionByPresentation, _ctx: &mut Self::Context) -> Self::Result {
+        use schema::questions;
+        use schema::questions::dsl::presentation_id;
+        let connection: &MysqlConnection =
+            &self.0.get().expect("Unable to get database connection.");
+
+        let questions: Vec<Questions> = questions::table
+            .filter(presentation_id.eq(msg.presentation_id))
+            .load(connection)?;
+
+        Ok(questions)
     }
 }
 
