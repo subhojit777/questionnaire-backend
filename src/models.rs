@@ -1,5 +1,4 @@
 use chrono::NaiveDateTime;
-use diesel::BelongingToDsl;
 use diesel::Insertable;
 use diesel::Queryable;
 use schema::answers;

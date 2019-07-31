@@ -1,6 +1,6 @@
 use actix::{Handler, Message};
 use actix_web::middleware::session::RequestSession;
-use actix_web::{AsyncResponder, Path};
+use actix_web::{AsyncResponder, Path, Query};
 use actix_web::{Error, HttpRequest, HttpResponse, Json, State};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -8,9 +8,7 @@ use diesel::result::Error as DieselError;
 use futures::Future;
 use futures::IntoFuture;
 use middleware::GitHubUserId;
-use models::{
-    GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Presentation, Questions,
-};
+use models::{GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Questions};
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
@@ -142,6 +140,24 @@ pub fn post(
 /// ```
 pub fn get(
     data: Path<GetQuestion>,
+    req: HttpRequest<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let state: &AppState = req.state();
+
+    state
+        .db
+        .send(data.into_inner())
+        .from_err()
+        .and_then(|response| match response {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        })
+        .responder()
+}
+
+pub fn get_by_presentation(
+    data: Query<GetQuestionByPresentation>,
     req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();

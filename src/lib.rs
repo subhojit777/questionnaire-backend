@@ -289,7 +289,7 @@ pub fn create_app() -> App<AppState> {
         .resource("/presentations", |r| {
             r.method(Method::POST).with_async(presentations::post)
         })
-        .resource("presentations/{id}", |r| {
+        .resource("/presentations/{id}", |r| {
             r.method(Method::GET).with_async(presentations::get)
         })
         .resource("/questions", |r| {
@@ -297,6 +297,10 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("/questions/{id}", |r| {
             r.method(Method::GET).with_async(questions::get)
+        })
+        .resource("/questions", |r| {
+            r.method(Method::GET)
+                .with_async(questions::get_by_presentation)
         })
         .resource("/options", |r| {
             r.method(Method::POST).with_async(options::post)
