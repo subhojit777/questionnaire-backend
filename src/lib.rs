@@ -198,6 +198,7 @@
 //! **Response:**
 //!
 //! GITHUB_ACCESS_TOKEN in JSON.
+extern crate actix_session;
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -213,14 +214,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate time;
 
-use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
+use actix::{Actor, Addr, SyncArbiter, SyncContext};
+use actix_session::CookieSession;
 use actix_web::middleware::DefaultHeaders;
-use actix_web::{
-    actix::{Actor, Addr, SyncArbiter, SyncContext},
-    http::Method,
-    middleware::Logger,
-    App,
-};
+use actix_web::{http::Method, middleware::Logger, App};
 use diesel::{
     mysql::MysqlConnection,
     r2d2::{ConnectionManager, Pool},
@@ -272,12 +269,8 @@ pub fn create_app() -> App<AppState> {
 
     App::with_state(AppState { db: addr.clone() })
         .middleware(Logger::default())
-        .middleware(SessionStorage::new(
-            CookieSessionBackend::signed(&[0; 32])
-                .secure(false)
-                .max_age(Duration::days(1)),
-        ))
-        .middleware(GitHubUserId::default())
+        .middleware(CookieSession::signed(&[0; 32]).secure(false).max_age(1))
+        //        .middleware(GitHubUserId::default())
         .middleware(DefaultHeaders::new().header("Access-Control-Allow-Origin", front_end_base_url))
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)

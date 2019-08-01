@@ -1,8 +1,7 @@
-use actix_web::actix::{Handler, Message};
-use actix_web::middleware::session::RequestSession;
+use actix::{Handler, Message};
+use actix_web::web::Path;
 use actix_web::Error;
-use actix_web::{AsyncResponder, Path};
-use actix_web::{HttpRequest, HttpResponse, Json, State};
+use actix_web::{web::Json, HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -69,9 +68,9 @@ impl Handler<GetPresentation> for DbExecutor {
 /// Response: 200 OK
 pub fn post(
     data: Json<PresentationInput>,
-    state: State<AppState>,
     req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let state: &AppState = req.state();
     let gh_user_id_session = req
         .session()
         .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)

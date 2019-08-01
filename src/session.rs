@@ -1,4 +1,3 @@
-use actix_web::middleware::session::RequestSession;
 use actix_web::{HttpRequest, HttpResponse};
 use AppState;
 

@@ -1,5 +1,5 @@
-use actix_web::client::ClientResponse;
-use actix_web::{client, AsyncResponder, Error, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::client::{Client, ClientResponse};
+use actix_web::{client, Error, HttpMessage, HttpRequest, HttpResponse};
 use dotenv::dotenv;
 use futures::Future;
 use std::collections::HashMap;
@@ -19,6 +19,7 @@ pub fn get_access_token(
     req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     dotenv().ok();
+    let mut client = Client::default();
 
     // Creates a key-value pair of query strings in the request.
     let query_strings: HashMap<String, String> = req
@@ -46,7 +47,8 @@ pub fn get_access_token(
 
     // In exchange of the code, retrieve the access token.
     // Throw error if it fails to retrieve the access token.
-    client::post("https://github.com/login/oauth/access_token")
+    client
+        .post("https://github.com/login/oauth/access_token")
         .json(body)
         .unwrap()
         .send()

@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Subhojit Paul <subhojitpaul21@gmail.com>"]
 
 [dependencies]
-actix-web = { version = "^0.7", features = ["ssl"] }
+actix-web = { version = "^1.0.5", features = ["ssl"] }
 diesel = { version = "^1.4", features = ["mysql", "chrono", "r2d2"] }
 dotenv = "0.13.0"
 serde = "1.0.80"
@@ -15,5 +15,6 @@ futures = "^0.1"
 env_logger = "^0.6"
 failure = "^0.1.5"
 reqwest = "^0.9.14"
-actix = { version = "^0.7" }
+actix = { version = "^0.8.3" }
 time = "^0.1.42"
+actix-session = "^0.2.0"
