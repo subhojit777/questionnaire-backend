@@ -1,7 +1,11 @@
 use crate::{error, AppState, DbExecutor};
-use actix::{Handler, Message};
-use actix_web::{error as AWError, web::Path};
-use actix_web::{web::Json, HttpRequest, HttpResponse};
+use actix_web::{error as AWError, Path};
+
+use actix_web::middleware::session::RequestSession;
+use actix_web::{
+    actix::{Handler, Message},
+    AsyncResponder, HttpRequest, HttpResponse, Json, State,
+};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -28,10 +32,9 @@ use GH_USER_SESSION_ID_KEY;
 /// Response: 200 OK
 pub fn post(
     data: Json<AnswerInput>,
+    state: State<AppState>,
     req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
-    let state: &AppState = req.state();
-
     let gh_user_id_session = req
         .session()
         .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
