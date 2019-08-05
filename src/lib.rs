@@ -298,7 +298,7 @@ pub fn create_app() -> App<AppState> {
         .resource("/questions/{id}", |r| {
             r.method(Method::GET).with_async(questions::get)
         })
-        .resource("/questions", |r| {
+        .resource("/questions-presentation", |r| {
             r.method(Method::GET)
                 .with_async(questions::get_by_presentation)
         })
