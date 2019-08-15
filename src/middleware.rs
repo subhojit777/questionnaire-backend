@@ -1,4 +1,5 @@
 use crate::error::Oauth;
+use actix_web::http::Method;
 use actix_web::middleware::session::RequestSession;
 use actix_web::middleware::{Middleware, Started};
 use actix_web::{Error, HttpRequest};
@@ -22,6 +23,11 @@ impl GitHubUserId {
 impl<S> Middleware<S> for GitHubUserId {
     fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
         if SAFE_PATHS.contains(&req.path()) {
+            return Ok(Started::Done);
+        }
+
+        // Preflight requests do not have the authorization header, therefore this can be skipped.
+        if req.method() == Method::OPTIONS {
             return Ok(Started::Done);
         }
 
