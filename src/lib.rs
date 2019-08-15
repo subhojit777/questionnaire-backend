@@ -213,11 +213,11 @@ extern crate serde;
 extern crate serde_derive;
 extern crate time;
 
+use actix_web::middleware::cors::Cors;
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
-use actix_web::middleware::DefaultHeaders;
 use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
-    http::Method,
+    http::{header, Method},
     middleware::Logger,
     App,
 };
@@ -278,7 +278,13 @@ pub fn create_app() -> App<AppState> {
                 .max_age(Duration::days(1)),
         ))
         .middleware(GitHubUserId::default())
-        .middleware(DefaultHeaders::new().header("Access-Control-Allow-Origin", front_end_base_url))
+        .middleware(
+            Cors::build()
+                .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+                .allowed_methods(vec![Method::GET, Method::POST])
+                .allowed_origin(&front_end_base_url)
+                .finish(),
+        )
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)
         })
