@@ -156,6 +156,27 @@ pub fn get(
         .responder()
 }
 
+/// Returns questions for a presentation.
+///
+/// `/questions-presentation/{id}` GET
+/// Where {id} is the presentation id.
+///
+/// Headers:
+///
+/// Authorization: token <access_token>
+///
+/// Response:
+/// ```json
+/// [
+///    {
+///         "id": 23,
+///         "title": "New Question",
+///         "created": "2019-11-01T14:30:30",
+///         "presentation_id": 3,
+///         "user_id": 7,
+///     }
+/// ]
+/// ```
 pub fn get_by_presentation(
     data: Query<GetQuestionByPresentation>,
     req: HttpRequest<AppState>,
