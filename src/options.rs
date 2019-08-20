@@ -1,7 +1,7 @@
 use actix::{Handler, Message};
 use actix_web::middleware::session::RequestSession;
-use actix_web::Error;
 use actix_web::{AsyncResponder, Path};
+use actix_web::{Error, Query};
 use actix_web::{HttpRequest, HttpResponse, Json, State};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -11,7 +11,7 @@ use diesel::MysqlConnection;
 use futures::future::IntoFuture;
 use futures::Future;
 use middleware::GitHubUserId;
-use models::{GetOption, NewOption, NewOptionJson, Option};
+use models::{GetOption, GetOptionsByQuestion, NewOption, NewOptionJson, Option};
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
@@ -51,6 +51,28 @@ impl Handler<GetOption> for DbExecutor {
         let result: Option = options.filter(id.eq(&msg.0)).first(connection)?;
 
         Ok(result)
+    }
+}
+
+impl Message for GetOptionsByQuestion {
+    type Result = Result<Vec<Option>, DieselError>;
+}
+
+impl Handler<GetOptionsByQuestion> for DbExecutor {
+    type Result = Result<Vec<Option>, DieselError>;
+
+    fn handle(&mut self, msg: GetOptionsByQuestion, _ctx: &mut Self::Context) -> Self::Result {
+        use schema::options;
+        use schema::options::dsl::question_id;
+
+        let connection: &MysqlConnection =
+            &self.0.get().expect("Unable to get database connection.");
+
+        let options: Vec<Option> = options::table
+            .filter(question_id.eq(msg.question_id))
+            .load(connection)?;
+
+        Ok(options)
     }
 }
 
@@ -123,6 +145,48 @@ pub fn post(
 /// ```
 pub fn get(
     data: Path<GetOption>,
+    req: HttpRequest<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = Error>> {
+    let state: &AppState = req.state();
+
+    state
+        .db
+        .send(data.into_inner())
+        .from_err()
+        .and_then(|response| match response {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        })
+        .responder()
+}
+
+/// Returns options for a question.
+///
+/// `/options-question` GET
+///
+/// Parameters:
+///
+/// question_id: {id}
+///
+/// Headers:
+///
+/// Authorization: token <access_token>
+///
+/// Response:
+/// ```json
+/// [
+///    {
+///         "id": 12,
+///         "data": "Option 1",
+///         "user_id": 9,
+///         "question_id": 1,
+///         "created": "2019-06-19T03:40:50"
+///     }
+/// ]
+/// ```
+pub fn get_by_question(
+    data: Query<GetOptionsByQuestion>,
     req: HttpRequest<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();

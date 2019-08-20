@@ -212,3 +212,11 @@ pub struct NewOptionJson {
 /// Defines an actor to retrieve an option from database by id.
 #[derive(Queryable, Deserialize)]
 pub struct GetOption(pub i32);
+
+/// Defines an actor for retrieving options for a question.
+#[derive(Queryable, Deserialize, Associations)]
+#[belongs_to(Questions, foreign_key = "question_id")]
+#[table_name = "options"]
+pub struct GetOptionsByQuestion {
+    pub question_id: i32,
+}

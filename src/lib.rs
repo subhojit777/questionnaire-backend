@@ -141,14 +141,26 @@
 //! }
 //! ```
 //!
-//! `/questions-presentation/{id}` GET
-//! Where {id} is the presentation id.
+//! #### Get questions for a presentation.
 //!
-//! Headers:
+//! **Endpoint:** `/questions-presentation`
 //!
+//! **Parameters:**
+//!
+//! ```txt
+//! presentation_id: <id>
+//! ```
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
 //! Authorization: token <access_token>
+//! ```
 //!
-//! Response:
+//! **Response:**
+//!
 //! ```json
 //! [
 //!    {
@@ -159,6 +171,7 @@
 //!         "user_id": 7,
 //!     }
 //! ]
+//! ```
 //!
 //! #### `/options`
 //!
@@ -204,6 +217,38 @@
 //! }
 //! ```
 //!
+//! #### Get options for a question
+//!
+//! **Endpoint:** `/options-question`
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! question_id: <id>
+//! ```
+//!
+//! **Method:** GET
+//!
+//! **Headers:**
+//!
+//! ```txt
+//! Authorization: token <access_token>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! [
+//!    {
+//!         "id": 12,
+//!         "data": "Option 1",
+//!         "user_id": 9,
+//!         "question_id": 1,
+//!         "created": "2019-06-19T03:40:50"
+//!     }
+//! ]
+//! ```
+//!
 //! #### `/gh-access-token`
 //!
 //! **Method:** GET
@@ -217,6 +262,7 @@
 //! **Response:**
 //!
 //! GITHUB_ACCESS_TOKEN in JSON.
+
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -332,6 +378,9 @@ pub fn create_app() -> App<AppState> {
         })
         .resource("/options/{id}", |r| {
             r.method(Method::GET).with_async(options::get)
+        })
+        .resource("/options-question", |r| {
+            r.method(Method::GET).with_async(options::get_by_question)
         })
         .resource("/gh-access-token", |r| {
             r.method(Method::GET)
