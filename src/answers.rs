@@ -63,10 +63,6 @@ pub fn post(
 
 /// `/answers/{id}` GET
 ///
-/// Headers:
-///
-/// Authorization: token <access_token>
-///
 /// Response:
 /// ```json
 /// {

@@ -129,10 +129,6 @@ pub fn post(
 
 /// `/options/{id}` GET
 ///
-/// Headers:
-///
-/// Authorization: token <access_token>
-///
 /// Response:
 /// ```json
 /// {
@@ -168,10 +164,6 @@ pub fn get(
 /// Parameters:
 ///
 /// question_id: {id}
-///
-/// Headers:
-///
-/// Authorization: token <access_token>
 ///
 /// Response:
 /// ```json

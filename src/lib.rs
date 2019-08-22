@@ -26,12 +26,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -80,12 +74,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -123,12 +111,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -152,12 +134,6 @@
 //! ```
 //!
 //! **Method:** GET
-//!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
 //!
 //! **Response:**
 //!
@@ -199,12 +175,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -228,12 +198,6 @@
 //! ```
 //!
 //! **Method:** GET
-//!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
 //!
 //! **Response:**
 //!
@@ -308,7 +272,15 @@ pub mod schema;
 pub mod session;
 
 const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
-const SAFE_PATHS: [&str; 1] = ["/gh-access-token"];
+const SAFE_PATHS: [&str; 7] = [
+    "/gh-access-token",
+    "/answers/{id}",
+    "/presentations/{id}",
+    "/questions/{id}",
+    "/questions-presentation",
+    "/options/{id}",
+    "/options-question",
+];
 
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);

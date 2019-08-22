@@ -124,10 +124,6 @@ pub fn post(
 
 /// `/questions/{id}` GET
 ///
-/// Headers:
-///
-/// Authorization: token <access_token>
-///
 /// Response:
 /// ```json
 /// {
@@ -158,12 +154,11 @@ pub fn get(
 
 /// Returns questions for a presentation.
 ///
-/// `/questions-presentation/{id}` GET
-/// Where {id} is the presentation id.
+/// `/questions-presentation` GET
 ///
-/// Headers:
+/// Parameters:
 ///
-/// Authorization: token <access_token>
+/// presentation_id: <presentation_id>
 ///
 /// Response:
 /// ```json

@@ -100,10 +100,6 @@ pub fn post(
 
 /// `/presentations/{id}` GET
 ///
-/// Headers:
-///
-/// Authorization: token <access_token>
-///
 /// Response:
 /// ```json
 /// {
