@@ -317,7 +317,11 @@ pub fn create_app() -> App<AppState> {
         .middleware(GitHubUserId::default())
         .middleware(
             Cors::build()
-                .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT])
+                .allowed_headers(vec![
+                    header::AUTHORIZATION,
+                    header::ACCEPT,
+                    header::CONTENT_TYPE,
+                ])
                 .allowed_methods(vec![Method::GET, Method::POST])
                 .allowed_origin(&front_end_base_url)
                 .finish(),
