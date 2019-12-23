@@ -96,7 +96,7 @@ pub fn post(
     data: Json<NewOptionJson>,
     state: State<AppState>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let gh_user_id_session = req
         .session()
         .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
@@ -142,7 +142,7 @@ pub fn post(
 pub fn get(
     data: Path<GetOption>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();
 
     state
@@ -180,7 +180,7 @@ pub fn get(
 pub fn get_by_question(
     data: Query<GetOptionsByQuestion>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();
 
     state

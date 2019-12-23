@@ -34,7 +34,7 @@ pub fn post(
     data: Json<AnswerInput>,
     state: State<AppState>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = AWError::Error>> {
     let gh_user_id_session = req
         .session()
         .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
@@ -75,7 +75,7 @@ pub fn post(
 pub fn get(
     data: Path<GetAnswerById>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = AWError::Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = AWError::Error>> {
     req.state()
         .db
         .send(data.into_inner())

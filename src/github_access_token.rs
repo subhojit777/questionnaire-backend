@@ -17,7 +17,7 @@ use {models, AppState};
 /// GITHUB_ACCESS_TOKEN in JSON.
 pub fn get_access_token(
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     dotenv().ok();
 
     // Creates a key-value pair of query strings in the request.
