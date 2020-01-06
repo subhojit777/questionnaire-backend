@@ -226,6 +226,37 @@
 //! **Response:**
 //!
 //! GITHUB_ACCESS_TOKEN in JSON.
+//!
+//! #### Get answers for an option
+//!
+//! **Endpoint:** `/answers-option`
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! option_id: <id>
+//! ```
+//!
+//! **Method:** GET
+//!
+//! **Response:**
+//!
+//! ```json
+//! [
+//!    {
+//!         "id": 12,
+//!         "user_id": 9,
+//!         "created": "2019-06-19T03:40:50",
+//!         "option_id": 1,
+//!     },
+//!    {
+//!         "id": 13,
+//!         "user_id": 18,
+//!         "created": "2019-06-30T03:40:50",
+//!         "option_id": 3,
+//!     }
+//! ]
+//! ```
 
 extern crate chrono;
 extern crate env_logger;

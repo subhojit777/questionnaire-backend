@@ -220,3 +220,11 @@ pub struct GetOption(pub i32);
 pub struct GetOptionsByQuestion {
     pub question_id: i32,
 }
+
+/// Defines an actor for retrieving answers for a question.
+#[derive(Queryable, Deserialize, Associations)]
+#[belongs_to(Questions, foreign_key = "option_id")]
+#[table_name = "answers"]
+pub struct GetAnswersByOption {
+    pub option_id: i32,
+}

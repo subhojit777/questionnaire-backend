@@ -1,5 +1,5 @@
 use crate::{error, AppState, DbExecutor};
-use actix_web::{error as AWError, Path};
+use actix_web::{error as AWError, Error, Path, Query};
 
 use actix_web::middleware::session::RequestSession;
 use actix_web::{
@@ -12,7 +12,7 @@ use diesel::result::Error as DieselError;
 use futures::future::IntoFuture;
 use futures::Future;
 use middleware::GitHubUserId;
-use models::{Answer, AnswerInput, GetAnswerById, NewAnswer};
+use models::{Answer, AnswerInput, GetAnswerById, GetAnswersByOption, NewAnswer};
 use GH_USER_SESSION_ID_KEY;
 
 /// `/answers` POST
@@ -88,6 +88,49 @@ pub fn get(
         .responder()
 }
 
+/// Returns answers for an option.
+///
+/// `/answers-option` GET
+///
+/// Parameters:
+///
+/// option_id: {id}
+///
+/// Response:
+/// ```json
+/// [
+///    {
+///         "id": 12,
+///         "user_id": 9,
+///         "created": "2019-06-19T03:40:50",
+///         "option_id": 1,
+///     },
+///    {
+///         "id": 13,
+///         "user_id": 18,
+///         "created": "2019-06-30T03:40:50",
+///         "option_id": 3,
+///     }
+/// ]
+/// ```
+pub fn get_by_option(
+    data: Query<GetAnswersByOption>,
+    req: HttpRequest<AppState>,
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
+    let state = req.state();
+
+    state
+        .db
+        .send(data.into_inner())
+        .from_err()
+        .and_then(|response| match response {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        })
+        .responder()
+}
+
 impl Message for NewAnswer {
     type Result = Result<(), error::Db>;
 }
@@ -124,5 +167,27 @@ impl Handler<GetAnswerById> for DbExecutor {
         let result: Answer = answers.filter(id.eq(&msg.0)).first(connection)?;
 
         Ok(result)
+    }
+}
+
+impl Message for GetAnswersByOption {
+    type Result = Result<Vec<Answer>, DieselError>;
+}
+
+impl Handler<GetAnswersByOption> for DbExecutor {
+    type Result = Result<Vec<Answer>, DieselError>;
+
+    fn handle(&mut self, msg: GetAnswersByOption, _ctx: &mut Self::Context) -> Self::Result {
+        use schema::answers;
+        use schema::answers::dsl::option_id;
+
+        let connection: &MysqlConnection =
+            &self.0.get().expect("Unable to get database connection.");
+
+        let answers: Vec<Answer> = answers::table
+            .filter(option_id.eq(msg.option_id))
+            .load(connection)?;
+
+        Ok(answers)
     }
 }
