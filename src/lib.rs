@@ -303,7 +303,7 @@ pub mod schema;
 pub mod session;
 
 const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
-const SAFE_PATHS: [&str; 7] = [
+const SAFE_PATHS: [&str; 8] = [
     "/gh-access-token",
     "/answers/{id}",
     "/presentations/{id}",
@@ -311,6 +311,7 @@ const SAFE_PATHS: [&str; 7] = [
     "/questions-presentation",
     "/options/{id}",
     "/options-question",
+    "/answers-option",
 ];
 
 /// Database execution actor.
@@ -392,5 +393,8 @@ pub fn create_app() -> App<AppState> {
         .resource("/gh-access-token", |r| {
             r.method(Method::GET)
                 .with_async(github_access_token::get_access_token)
+        })
+        .resource("/answers-option", |r| {
+            r.method(Method::GET).with_async(answers::get_by_option)
         })
 }
