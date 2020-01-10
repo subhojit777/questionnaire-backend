@@ -1,6 +1,6 @@
 use actix::{Handler, Message};
 use actix_web::middleware::session::RequestSession;
-use actix_web::{AsyncResponder, Path};
+use actix_web::{AsyncResponder, Path, Query};
 use actix_web::{Error, HttpRequest, HttpResponse, Json, State};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -8,7 +8,7 @@ use diesel::result::Error as DieselError;
 use futures::Future;
 use futures::IntoFuture;
 use middleware::GitHubUserId;
-use models::{GetQuestion, NewQuestion, NewQuestionJson, Questions};
+use models::{GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Questions};
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
@@ -50,6 +50,27 @@ impl Handler<GetQuestion> for DbExecutor {
     }
 }
 
+impl Message for GetQuestionByPresentation {
+    type Result = Result<Vec<Questions>, DieselError>;
+}
+
+impl Handler<GetQuestionByPresentation> for DbExecutor {
+    type Result = Result<Vec<Questions>, DieselError>;
+
+    fn handle(&mut self, msg: GetQuestionByPresentation, _ctx: &mut Self::Context) -> Self::Result {
+        use schema::questions;
+        use schema::questions::dsl::presentation_id;
+        let connection: &MysqlConnection =
+            &self.0.get().expect("Unable to get database connection.");
+
+        let questions: Vec<Questions> = questions::table
+            .filter(presentation_id.eq(msg.presentation_id))
+            .load(connection)?;
+
+        Ok(questions)
+    }
+}
+
 /// `/questions` POST
 ///
 /// Headers:
@@ -70,7 +91,7 @@ pub fn post(
     data: Json<NewQuestionJson>,
     state: State<AppState>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let gh_user_id_session = req
         .session()
         .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
@@ -103,10 +124,6 @@ pub fn post(
 
 /// `/questions/{id}` GET
 ///
-/// Headers:
-///
-/// Authorization: token <access_token>
-///
 /// Response:
 /// ```json
 /// {
@@ -120,7 +137,45 @@ pub fn post(
 pub fn get(
     data: Path<GetQuestion>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
+    let state: &AppState = req.state();
+
+    state
+        .db
+        .send(data.into_inner())
+        .from_err()
+        .and_then(|response| match response {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        })
+        .responder()
+}
+
+/// Returns questions for a presentation.
+///
+/// `/questions-presentation` GET
+///
+/// Parameters:
+///
+/// presentation_id: <presentation_id>
+///
+/// Response:
+/// ```json
+/// [
+///    {
+///         "id": 23,
+///         "title": "New Question",
+///         "created": "2019-11-01T14:30:30",
+///         "presentation_id": 3,
+///         "user_id": 7,
+///     }
+/// ]
+/// ```
+pub fn get_by_presentation(
+    data: Query<GetQuestionByPresentation>,
+    req: HttpRequest<AppState>,
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();
 
     state

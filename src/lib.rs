@@ -26,12 +26,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -80,12 +74,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -123,12 +111,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -139,6 +121,32 @@
 //!    "presentation_id": 3,
 //!    "user_id": 7,
 //! }
+//! ```
+//!
+//! #### Get questions for a presentation.
+//!
+//! **Endpoint:** `/questions-presentation`
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! presentation_id: <id>
+//! ```
+//!
+//! **Method:** GET
+//!
+//! **Response:**
+//!
+//! ```json
+//! [
+//!    {
+//!         "id": 23,
+//!         "title": "New Question",
+//!         "created": "2019-11-01T14:30:30",
+//!         "presentation_id": 3,
+//!         "user_id": 7,
+//!     }
+//! ]
 //! ```
 //!
 //! #### `/options`
@@ -167,12 +175,6 @@
 //!
 //! **Method:** GET
 //!
-//! **Headers:**
-//!
-//! ```txt
-//! Authorization: token <access_token>
-//! ```
-//!
 //! **Response:**
 //!
 //! ```json
@@ -184,6 +186,78 @@
 //!    "created": "2019-06-19T03:40:50"
 //! }
 //! ```
+//!
+//! #### Get options for a question
+//!
+//! **Endpoint:** `/options-question`
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! question_id: <id>
+//! ```
+//!
+//! **Method:** GET
+//!
+//! **Response:**
+//!
+//! ```json
+//! [
+//!    {
+//!         "id": 12,
+//!         "data": "Option 1",
+//!         "user_id": 9,
+//!         "question_id": 1,
+//!         "created": "2019-06-19T03:40:50"
+//!     }
+//! ]
+//! ```
+//!
+//! #### `/gh-access-token`
+//!
+//! **Method:** GET
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! code: GITHUB_LOGIN_CODE obtained from https://github.com/login/oauth/authorize
+//! ```
+//!
+//! **Response:**
+//!
+//! GITHUB_ACCESS_TOKEN in JSON.
+//!
+//! #### Get answers for an option
+//!
+//! **Endpoint:** `/answers-option`
+//!
+//! **Parameters:**
+//!
+//! ```txt
+//! option_id: <id>
+//! ```
+//!
+//! **Method:** GET
+//!
+//! **Response:**
+//!
+//! ```json
+//! [
+//!    {
+//!         "id": 12,
+//!         "user_id": 9,
+//!         "created": "2019-06-19T03:40:50",
+//!         "option_id": 1,
+//!     },
+//!    {
+//!         "id": 13,
+//!         "user_id": 18,
+//!         "created": "2019-06-30T03:40:50",
+//!         "option_id": 3,
+//!     }
+//! ]
+//! ```
+
 extern crate chrono;
 extern crate env_logger;
 extern crate reqwest;
@@ -199,10 +273,11 @@ extern crate serde;
 extern crate serde_derive;
 extern crate time;
 
+use actix_web::middleware::cors::Cors;
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use actix_web::{
     actix::{Actor, Addr, SyncArbiter, SyncContext},
-    http::Method,
+    http::{header, Method},
     middleware::Logger,
     App,
 };
@@ -217,7 +292,7 @@ use time::Duration;
 
 pub mod answers;
 pub mod error;
-pub mod github;
+pub mod github_access_token;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
@@ -228,6 +303,16 @@ pub mod schema;
 pub mod session;
 
 const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
+const SAFE_PATHS: [&str; 8] = [
+    "/gh-access-token",
+    "/answers/{id}",
+    "/presentations/{id}",
+    "/questions/{id}",
+    "/questions-presentation",
+    "/options/{id}",
+    "/options-question",
+    "/answers-option",
+];
 
 /// Database execution actor.
 pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
@@ -244,6 +329,7 @@ pub fn create_app() -> App<AppState> {
     dotenv().ok();
     env_logger::init();
 
+    let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
 
@@ -261,20 +347,28 @@ pub fn create_app() -> App<AppState> {
                 .max_age(Duration::days(1)),
         ))
         .middleware(GitHubUserId::default())
+        .middleware(
+            Cors::build()
+                .allowed_headers(vec![
+                    header::AUTHORIZATION,
+                    header::ACCEPT,
+                    header::CONTENT_TYPE,
+                ])
+                .allowed_methods(vec![Method::GET, Method::POST])
+                .allowed_origin(&front_end_base_url)
+                .finish(),
+        )
         .resource("/answers", |r| {
             r.method(Method::POST).with_async(answers::post)
         })
         .resource("/answers/{id}", |r| {
             r.method(Method::GET).with_async(answers::get)
         })
-        .resource("/gh-redirect", |r| {
-            r.method(Method::GET).a(github::login_redirect)
-        })
         .resource("/logout", |r| r.method(Method::GET).f(session::logout))
         .resource("/presentations", |r| {
             r.method(Method::POST).with_async(presentations::post)
         })
-        .resource("presentations/{id}", |r| {
+        .resource("/presentations/{id}", |r| {
             r.method(Method::GET).with_async(presentations::get)
         })
         .resource("/questions", |r| {
@@ -283,10 +377,24 @@ pub fn create_app() -> App<AppState> {
         .resource("/questions/{id}", |r| {
             r.method(Method::GET).with_async(questions::get)
         })
+        .resource("/questions-presentation", |r| {
+            r.method(Method::GET)
+                .with_async(questions::get_by_presentation)
+        })
         .resource("/options", |r| {
             r.method(Method::POST).with_async(options::post)
         })
         .resource("/options/{id}", |r| {
             r.method(Method::GET).with_async(options::get)
+        })
+        .resource("/options-question", |r| {
+            r.method(Method::GET).with_async(options::get_by_question)
+        })
+        .resource("/gh-access-token", |r| {
+            r.method(Method::GET)
+                .with_async(github_access_token::get_access_token)
+        })
+        .resource("/answers-option", |r| {
+            r.method(Method::GET).with_async(answers::get_by_option)
         })
 }

@@ -71,7 +71,7 @@ pub fn post(
     data: Json<PresentationInput>,
     state: State<AppState>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let gh_user_id_session = req
         .session()
         .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
@@ -100,10 +100,6 @@ pub fn post(
 
 /// `/presentations/{id}` GET
 ///
-/// Headers:
-///
-/// Authorization: token <access_token>
-///
 /// Response:
 /// ```json
 /// {
@@ -116,7 +112,7 @@ pub fn post(
 pub fn get(
     data: Path<GetPresentation>,
     req: HttpRequest<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = Error>> {
+) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     req.state()
         .db
         .send(data.into_inner())
