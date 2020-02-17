@@ -265,7 +265,9 @@ extern crate serde_json;
 #[macro_use]
 extern crate diesel;
 extern crate actix;
+extern crate actix_cors;
 extern crate actix_http;
+extern crate actix_session;
 extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
@@ -275,9 +277,9 @@ extern crate serde_derive;
 extern crate time;
 
 use actix::{Actor, Addr, SyncArbiter, SyncContext};
+use actix_cors::Cors;
+use actix_session::CookieSession;
 use actix_web::body::MessageBody;
-use actix_web::middleware::cors::Cors;
-use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use actix_web::{
     http::{header, Method},
     middleware::Logger,
@@ -342,15 +344,15 @@ pub fn create_app() -> App<AppState, dyn MessageBody> {
     let addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
 
     App::with_state(AppState { db: addr.clone() })
-        .middleware(Logger::default())
-        .middleware(SessionStorage::new(
-            CookieSessionBackend::signed(&[0; 32])
+        .wrap(Logger::default())
+        .wrap(
+            CookieSession::signed(&[0; 32])
                 .secure(false)
-                .max_age(Duration::days(1)),
-        ))
-        .middleware(GitHubUserId::default())
-        .middleware(
-            Cors::build()
+                .max_age(Duration::days(1).num_seconds()),
+        )
+        .wrap(GitHubUserId::default())
+        .wrap(
+            Cors::new()
                 .allowed_headers(vec![
                     header::AUTHORIZATION,
                     header::ACCEPT,
