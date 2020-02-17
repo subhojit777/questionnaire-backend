@@ -1,8 +1,7 @@
-use actix_web::actix::{Handler, Message};
-use actix_web::middleware::session::RequestSession;
+use actix::{Handler, Message};
+use actix_web::web::{Json, Path};
 use actix_web::Error;
-use actix_web::{AsyncResponder, Path};
-use actix_web::{HttpRequest, HttpResponse, Json, State};
+use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -10,8 +9,9 @@ use futures::Future;
 use futures::IntoFuture;
 use middleware::GitHubUserId;
 use models::{GetPresentation, NewPresentation, Presentation, PresentationInput};
+use serde_json::ser::State;
+use GH_USER_SESSION_ID_KEY;
 use {error, DbExecutor};
-use {AppState, GH_USER_SESSION_ID_KEY};
 
 impl Message for NewPresentation {
     type Result = Result<(), error::Db>;
@@ -69,8 +69,8 @@ impl Handler<GetPresentation> for DbExecutor {
 /// Response: 200 OK
 pub fn post(
     data: Json<PresentationInput>,
-    state: State<AppState>,
-    req: HttpRequest<AppState>,
+    state: State,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let gh_user_id_session = req
         .session()
@@ -111,7 +111,7 @@ pub fn post(
 /// ```
 pub fn get(
     data: Path<GetPresentation>,
-    req: HttpRequest<AppState>,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     req.state()
         .db

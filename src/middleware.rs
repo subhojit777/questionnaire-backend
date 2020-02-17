@@ -1,6 +1,5 @@
 use crate::error::Oauth;
 use actix_web::http::Method;
-use actix_web::middleware::session::RequestSession;
 use actix_web::middleware::{Middleware, Started};
 use actix_web::{Error, HttpRequest};
 use reqwest::header::AUTHORIZATION;
@@ -21,7 +20,7 @@ impl GitHubUserId {
 }
 
 impl<S> Middleware<S> for GitHubUserId {
-    fn start(&self, req: &HttpRequest<S>) -> Result<Started, Error> {
+    fn start(&self, req: &HttpRequest) -> Result<Started, Error> {
         if SAFE_PATHS.contains(&req.path()) {
             return Ok(Started::Done);
         }

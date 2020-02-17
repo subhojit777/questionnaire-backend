@@ -265,6 +265,7 @@ extern crate serde_json;
 #[macro_use]
 extern crate diesel;
 extern crate actix;
+extern crate actix_http;
 extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
@@ -273,10 +274,11 @@ extern crate serde;
 extern crate serde_derive;
 extern crate time;
 
+use actix::{Actor, Addr, SyncArbiter, SyncContext};
+use actix_web::body::MessageBody;
 use actix_web::middleware::cors::Cors;
 use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
 use actix_web::{
-    actix::{Actor, Addr, SyncArbiter, SyncContext},
     http::{header, Method},
     middleware::Logger,
     App,
@@ -325,7 +327,7 @@ pub struct AppState {
     db: Addr<DbExecutor>,
 }
 
-pub fn create_app() -> App<AppState> {
+pub fn create_app() -> App<AppState, dyn MessageBody> {
     dotenv().ok();
     env_logger::init();
 

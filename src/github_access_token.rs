@@ -1,10 +1,11 @@
+use actix_web::client::Client;
 use actix_web::client::ClientResponse;
-use actix_web::{client, AsyncResponder, Error, HttpMessage, HttpRequest, HttpResponse};
+use actix_web::{Error, HttpRequest, HttpResponse};
 use dotenv::dotenv;
 use futures::Future;
+use models;
 use std::collections::HashMap;
 use std::{env, str};
-use {models, AppState};
 
 /// `/gh-access-token` GET
 ///
@@ -15,9 +16,7 @@ use {models, AppState};
 /// Response:
 ///
 /// GITHUB_ACCESS_TOKEN in JSON.
-pub fn get_access_token(
-    req: HttpRequest<AppState>,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
+pub fn get_access_token(req: HttpRequest) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     dotenv().ok();
 
     // Creates a key-value pair of query strings in the request.
@@ -44,9 +43,12 @@ pub fn get_access_token(
         String::from("json"),
     );
 
+    let mut client = Client::default();
+
     // In exchange of the code, retrieve the access token.
     // Throw error if it fails to retrieve the access token.
-    client::post("https://github.com/login/oauth/access_token")
+    client
+        .post("https://github.com/login/oauth/access_token")
         .json(body)
         .unwrap()
         .send()

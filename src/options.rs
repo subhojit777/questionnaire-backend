@@ -1,8 +1,7 @@
 use actix::{Handler, Message};
-use actix_web::middleware::session::RequestSession;
-use actix_web::{AsyncResponder, Path};
-use actix_web::{Error, Query};
-use actix_web::{HttpRequest, HttpResponse, Json, State};
+use actix_web::web::{Json, Path, Query};
+use actix_web::Error;
+use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
@@ -12,6 +11,7 @@ use futures::future::IntoFuture;
 use futures::Future;
 use middleware::GitHubUserId;
 use models::{GetOption, GetOptionsByQuestion, NewOption, NewOptionJson, Option};
+use serde_json::ser::State;
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
@@ -94,8 +94,8 @@ impl Handler<GetOptionsByQuestion> for DbExecutor {
 /// Response: 200 OK
 pub fn post(
     data: Json<NewOptionJson>,
-    state: State<AppState>,
-    req: HttpRequest<AppState>,
+    state: State,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let gh_user_id_session = req
         .session()
@@ -141,7 +141,7 @@ pub fn post(
 /// ```
 pub fn get(
     data: Path<GetOption>,
-    req: HttpRequest<AppState>,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();
 
@@ -179,7 +179,7 @@ pub fn get(
 /// ```
 pub fn get_by_question(
     data: Query<GetOptionsByQuestion>,
-    req: HttpRequest<AppState>,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let state: &AppState = req.state();
 

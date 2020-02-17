@@ -1,6 +1,4 @@
-use actix_web::middleware::session::RequestSession;
 use actix_web::{HttpRequest, HttpResponse};
-use AppState;
 
 /// Logs out the user.
 ///
@@ -13,7 +11,7 @@ use AppState;
 /// ```
 ///
 /// Response: 200 OK
-pub fn logout(req: &HttpRequest<AppState>) -> HttpResponse {
+pub fn logout(req: &HttpRequest) -> HttpResponse {
     req.session().clear();
     HttpResponse::Ok().finish()
 }

@@ -1,11 +1,9 @@
-use crate::{error, AppState, DbExecutor};
-use actix_web::{error as AWError, Error, Path, Query};
+use crate::{error, DbExecutor};
+use actix_web::{error as AWError, Error};
 
-use actix_web::middleware::session::RequestSession;
-use actix_web::{
-    actix::{Handler, Message},
-    AsyncResponder, HttpRequest, HttpResponse, Json, State,
-};
+use actix::{Handler, Message};
+use actix_web::web::{Json, Path, Query};
+use actix_web::{HttpRequest, HttpResponse};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -13,6 +11,7 @@ use futures::future::IntoFuture;
 use futures::Future;
 use middleware::GitHubUserId;
 use models::{Answer, AnswerInput, GetAnswerById, GetAnswersByOption, NewAnswer};
+use serde_json::ser::State;
 use GH_USER_SESSION_ID_KEY;
 
 /// `/answers` POST
@@ -32,8 +31,8 @@ use GH_USER_SESSION_ID_KEY;
 /// Response: 200 OK
 pub fn post(
     data: Json<AnswerInput>,
-    state: State<AppState>,
-    req: HttpRequest<AppState>,
+    state: State,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = AWError::Error>> {
     let gh_user_id_session = req
         .session()
@@ -74,7 +73,7 @@ pub fn post(
 /// ```
 pub fn get(
     data: Path<GetAnswerById>,
-    req: HttpRequest<AppState>,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = AWError::Error>> {
     req.state()
         .db
@@ -115,7 +114,7 @@ pub fn get(
 /// ```
 pub fn get_by_option(
     data: Query<GetAnswersByOption>,
-    req: HttpRequest<AppState>,
+    req: HttpRequest,
 ) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
     let state = req.state();
 
