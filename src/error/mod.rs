@@ -35,6 +35,6 @@ impl ResponseError for Oauth {
     }
 
     fn error_response(&self) -> HttpResponse {
-        ResponseBuilder::new(self.status_code())
+        ResponseBuilder::new(self.status_code()).body(self.to_string())
     }
 }

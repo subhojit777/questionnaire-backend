@@ -278,12 +278,12 @@ extern crate time;
 
 use actix::{Actor, Addr, SyncArbiter, SyncContext};
 use actix_cors::Cors;
-use actix_session::CookieSession;
+use actix_session::{CookieSession, Session};
 use actix_web::body::MessageBody;
 use actix_web::{
     http::{header, Method},
     middleware::Logger,
-    App,
+    App, HttpRequest,
 };
 use diesel::{
     mysql::MysqlConnection,
@@ -350,7 +350,13 @@ pub fn create_app() -> App<AppState, dyn MessageBody> {
                 .secure(false)
                 .max_age(Duration::days(1).num_seconds()),
         )
-        .wrap(GitHubUserId::default())
+        .wrap_fn(|req: HttpRequest, srv| {
+            let current_session: Session = req.current_session();
+            if let Some(_) = current_session.get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)? {
+            } else {
+                current_session.set(GH_USER_SESSION_ID_KEY, 1);
+            }
+        })
         .wrap(
             Cors::new()
                 .allowed_headers(vec![

@@ -5,6 +5,7 @@ extern crate questionnaire_rs;
 use actix_web::HttpServer;
 use questionnaire_rs::*;
 
+#[actix_rt::main]
 fn main() {
     // TODO: URL should come from environment variable.
     HttpServer::new(create_app)
