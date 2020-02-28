@@ -276,23 +276,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate time;
 
-use actix::{Actor, Addr, SyncArbiter, SyncContext};
-use actix_cors::Cors;
-use actix_session::{CookieSession, Session};
-use actix_web::body::MessageBody;
-use actix_web::{
-    http::{header, Method},
-    middleware::Logger,
-    App, HttpRequest,
-};
 use diesel::{
     mysql::MysqlConnection,
     r2d2::{ConnectionManager, Pool},
 };
-use dotenv::dotenv;
-use middleware::GitHubUserId;
-use std::env;
-use time::Duration;
 
 pub mod answers;
 pub mod error;

@@ -1,9 +1,8 @@
-use crate::{error, DbPool, GH_USER_SESSION_ID_KEY};
-use actix_web::{error as AWError, Error};
+use crate::{DbPool, GH_USER_SESSION_ID_KEY};
+use actix_web::Error;
 
 use crate::middleware::GitHubUserId;
 use crate::models::{Answer, AnswerInput, GetAnswerById, GetAnswersByOption, NewAnswer};
-use actix::{Handler, Message};
 use actix_session::Session;
 use actix_web::web::{block, Data, Json, Path, Query};
 use actix_web::{get, post};
@@ -11,7 +10,6 @@ use actix_web::{HttpRequest, HttpResponse};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use futures::future::IntoFuture;
 use futures::Future;
 use serde_json::ser::State;
 
@@ -53,7 +51,9 @@ pub async fn post(
     session: Session,
     data: Json<AnswerInput>,
 ) -> Result<HttpResponse, Error> {
-    let gh_user_id_session = session.get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)?;
+    let gh_user_id_session = session
+        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
+        .unwrap_or_else(|_| Some(GitHubUserId { id: 1 }));
 
     return if let Some(user_id) = gh_user_id_session {
         let connection = pool.get().expect("couldn't get db connection from pool");

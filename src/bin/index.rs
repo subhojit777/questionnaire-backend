@@ -38,17 +38,6 @@ async fn main() -> std::io::Result<()> {
                     .secure(false)
                     .max_age(Duration::days(1).num_seconds()),
             )
-            .wrap_fn(|req, srv| async {
-                let response = future.await?;
-                let current_session: Session = req.get_session();
-
-                if let Some(_) = current_session.get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)? {
-                } else {
-                    current_session.set(GH_USER_SESSION_ID_KEY, 1);
-                }
-
-                Ok(response)
-            })
             .wrap(
                 Cors::new()
                     .allowed_headers(vec![
