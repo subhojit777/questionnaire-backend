@@ -1,4 +1,5 @@
-use actix_web::{HttpRequest, HttpResponse};
+use actix_session::Session;
+use actix_web::{get, HttpRequest, HttpResponse};
 
 /// Logs out the user.
 ///
@@ -11,7 +12,8 @@ use actix_web::{HttpRequest, HttpResponse};
 /// ```
 ///
 /// Response: 200 OK
-pub fn logout(req: &HttpRequest) -> HttpResponse {
-    req.session().clear();
+#[get("/logout")]
+pub fn logout(session: Session) -> HttpResponse {
+    session.clear();
     HttpResponse::Ok().finish()
 }

@@ -296,17 +296,16 @@ use time::Duration;
 
 pub mod answers;
 pub mod error;
-pub mod github_access_token;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
-pub mod options;
-pub mod presentations;
-pub mod questions;
+// pub mod options;
+// pub mod presentations;
+// pub mod questions;
 pub mod schema;
 pub mod session;
 
-const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
+pub const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
 const SAFE_PATHS: [&str; 8] = [
     "/gh-access-token",
     "/answers/{id}",
@@ -318,93 +317,4 @@ const SAFE_PATHS: [&str; 8] = [
     "/answers-option",
 ];
 
-/// Database execution actor.
-pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
-
-impl Actor for DbExecutor {
-    type Context = SyncContext<Self>;
-}
-
-pub struct AppState {
-    db: Addr<DbExecutor>,
-}
-
-pub fn create_app() -> App<AppState, dyn MessageBody> {
-    dotenv().ok();
-    env_logger::init();
-
-    let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
-    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
-
-    let pool = Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
-
-    let addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
-
-    App::with_state(AppState { db: addr.clone() })
-        .wrap(Logger::default())
-        .wrap(
-            CookieSession::signed(&[0; 32])
-                .secure(false)
-                .max_age(Duration::days(1).num_seconds()),
-        )
-        .wrap_fn(|req: HttpRequest, srv| {
-            let current_session: Session = req.current_session();
-            if let Some(_) = current_session.get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)? {
-            } else {
-                current_session.set(GH_USER_SESSION_ID_KEY, 1);
-            }
-        })
-        .wrap(
-            Cors::new()
-                .allowed_headers(vec![
-                    header::AUTHORIZATION,
-                    header::ACCEPT,
-                    header::CONTENT_TYPE,
-                ])
-                .allowed_methods(vec![Method::GET, Method::POST])
-                .allowed_origin(&front_end_base_url)
-                .finish(),
-        )
-        .resource("/answers", |r| {
-            r.method(Method::POST).with_async(answers::post)
-        })
-        .resource("/answers/{id}", |r| {
-            r.method(Method::GET).with_async(answers::get)
-        })
-        .resource("/logout", |r| r.method(Method::GET).f(session::logout))
-        .resource("/presentations", |r| {
-            r.method(Method::POST).with_async(presentations::post)
-        })
-        .resource("/presentations/{id}", |r| {
-            r.method(Method::GET).with_async(presentations::get)
-        })
-        .resource("/questions", |r| {
-            r.method(Method::POST).with_async(questions::post)
-        })
-        .resource("/questions/{id}", |r| {
-            r.method(Method::GET).with_async(questions::get)
-        })
-        .resource("/questions-presentation", |r| {
-            r.method(Method::GET)
-                .with_async(questions::get_by_presentation)
-        })
-        .resource("/options", |r| {
-            r.method(Method::POST).with_async(options::post)
-        })
-        .resource("/options/{id}", |r| {
-            r.method(Method::GET).with_async(options::get)
-        })
-        .resource("/options-question", |r| {
-            r.method(Method::GET).with_async(options::get_by_question)
-        })
-        .resource("/gh-access-token", |r| {
-            r.method(Method::GET)
-                .with_async(github_access_token::get_access_token)
-        })
-        .resource("/answers-option", |r| {
-            r.method(Method::GET).with_async(answers::get_by_option)
-        })
-}
+pub type DbPool = Pool<ConnectionManager<MysqlConnection>>;

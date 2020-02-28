@@ -1,10 +1,10 @@
+use crate::schema::answers;
+use crate::schema::options;
+use crate::schema::presentations;
+use crate::schema::questions;
 use chrono::NaiveDateTime;
 use diesel::Insertable;
 use diesel::Queryable;
-use schema::answers;
-use schema::options;
-use schema::presentations;
-use schema::questions;
 use serde_derive::*;
 
 #[derive(Queryable, Serialize, Deserialize, Identifiable, Associations)]

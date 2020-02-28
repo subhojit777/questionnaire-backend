@@ -2,6 +2,7 @@
 name = "questionnaire-rs"
 version = "0.1.0"
 authors = ["Subhojit Paul <subhojitpaul21@gmail.com>"]
+edition = "2018"
 
 [dependencies]
 actix-web = { version = "2.0.0", features = ["openssl"] }
@@ -20,3 +21,5 @@ time = "^0.1.42"
 actix-http = "^1.0.1"
 actix-cors = "^0.2.0"
 actix-session = "^0.3.0"
+actix-rt = "^1.0.0"
+actix-service = "^1.0.0"
