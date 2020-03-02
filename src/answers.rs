@@ -13,7 +13,7 @@ use diesel::result::Error as DieselError;
 use futures::Future;
 use serde_json::ser::State;
 
-pub fn new_answer(
+fn new_answer(
     option_id: i32,
     user_id: i32,
     connection: &MysqlConnection,
@@ -48,12 +48,11 @@ pub fn new_answer(
 #[post("/answers")]
 pub async fn post(
     pool: Data<DbPool>,
-    session: Session,
+    _session: Session,
     data: Json<AnswerInput>,
 ) -> Result<HttpResponse, Error> {
-    let gh_user_id_session = session
-        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
-        .unwrap_or_else(|_| Some(GitHubUserId { id: 1 }));
+    // TODO: Implement retrieval of user_id from session.
+    let gh_user_id_session = Some(GitHubUserId { id: 1 });
 
     return if let Some(user_id) = gh_user_id_session {
         let connection = pool.get().expect("couldn't get db connection from pool");
@@ -69,6 +68,12 @@ pub async fn post(
     };
 }
 
+fn get_answer_by_id(answer_id: i32, connection: &MysqlConnection) -> Result<Answer, DieselError> {
+    use crate::schema::answers::dsl::{answers, id};
+
+    answers.filter(id.eq(answer_id)).first::<Answer>(connection)
+}
+
 /// `/answers/{id}` GET
 ///
 /// Response:
@@ -80,18 +85,16 @@ pub async fn post(
 ///    "option_id": 23
 /// }
 /// ```
-pub async fn get(data: Path<GetAnswerById>, req: HttpRequest) -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok().finish())
-    // req.state()
-    //     .db
-    //     .send(data.into_inner())
-    //     .from_err()
-    //     .and_then(|response| match response {
-    //         Ok(result) => Ok(HttpResponse::Ok().json(result)),
-    //         Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-    //         Err(_) => Ok(HttpResponse::InternalServerError().into()),
-    //     })
-    //     .responder()
+#[get("/answers/{id}")]
+pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let answer_id = data.into_inner();
+    let connection = pool.get().expect("couldn't get db connection from pool.");
+
+    let answer = block(move || get_answer_by_id(answer_id, &connection))
+        .await
+        .map_err(|e| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(answer))
 }
 
 /// Returns answers for an option.
@@ -138,44 +141,6 @@ pub async fn get_by_option(
     //     .responder()
 }
 
-// impl Message for NewAnswer {
-//     type Result = Result<(), error::Db>;
-// }
-//
-// impl Handler<NewAnswer> for DbExecutor {
-//     type Result = Result<(), error::Db>;
-//
-//     fn handle(&mut self, msg: NewAnswer, _: &mut Self::Context) -> Self::Result {
-//         use crate::schema::answers::dsl::answers;
-//
-//         let connection: &MysqlConnection = &self.0.get().unwrap();
-//
-//         diesel::insert_into(answers)
-//             .values(&msg)
-//             .execute(connection)
-//             .expect("Error saving the an answer");
-//
-//         Ok(())
-//     }
-// }
-
-// impl Message for GetAnswerById {
-//     type Result = Result<Answer, DieselError>;
-// }
-//
-// impl Handler<GetAnswerById> for DbExecutor {
-//     type Result = Result<Answer, DieselError>;
-//
-//     fn handle(&mut self, msg: GetAnswerById, _ctx: &mut Self::Context) -> Self::Result {
-//         use crate::schema::answers::dsl::{answers, id};
-//
-//         let connection: &MysqlConnection = &self.0.get().unwrap();
-//
-//         let result: Answer = answers.filter(id.eq(&msg.0)).first(connection)?;
-//
-//         Ok(result)
-//     }
-// }
 //
 // impl Message for GetAnswersByOption {
 //     type Result = Result<Vec<Answer>, DieselError>;

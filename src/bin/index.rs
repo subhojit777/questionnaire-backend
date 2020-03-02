@@ -50,6 +50,7 @@ async fn main() -> std::io::Result<()> {
                     .finish(),
             )
             .service(answers::post)
+            .service(answers::get)
         // .resource("/answers/{id}", |r| {
         //     r.method(Method::GET).with_async(answers::get)
         // })
