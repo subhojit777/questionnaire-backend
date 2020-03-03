@@ -97,13 +97,21 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
     Ok(HttpResponse::Ok().json(answer))
 }
 
+fn get_answer_by_option_id(
+    option_id: i32,
+    connection: &MysqlConnection,
+) -> Result<Vec<Answer>, DieselError> {
+    use crate::schema::answers;
+    use crate::schema::answers::dsl::option_id as schema_option_id;
+
+    answers::table
+        .filter(schema_option_id.eq(option_id))
+        .load(connection)
+}
+
 /// Returns answers for an option.
 ///
-/// `/answers-option` GET
-///
-/// Parameters:
-///
-/// option_id: {id}
+/// `/answers-option/{option_id}` GET
 ///
 /// Response:
 /// ```json
@@ -122,44 +130,14 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
 ///     }
 /// ]
 /// ```
-pub async fn get_by_option(
-    data: Query<GetAnswersByOption>,
-    req: HttpRequest,
-) -> Result<HttpResponse, Error> {
-    Ok(HttpResponse::Ok().finish())
-    // let state = req.state();
-    //
-    // state
-    //     .db
-    //     .send(data.into_inner())
-    //     .from_err()
-    //     .and_then(|response| match response {
-    //         Ok(result) => Ok(HttpResponse::Ok().json(result)),
-    //         Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-    //         Err(_) => Ok(HttpResponse::InternalServerError().into()),
-    //     })
-    //     .responder()
-}
+#[get("/answers-option/{id}")]
+pub async fn get_by_option(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let option_id = data.into_inner();
+    let connection = pool.get().expect("unable to get database connection");
 
-//
-// impl Message for GetAnswersByOption {
-//     type Result = Result<Vec<Answer>, DieselError>;
-// }
-//
-// impl Handler<GetAnswersByOption> for DbExecutor {
-//     type Result = Result<Vec<Answer>, DieselError>;
-//
-//     fn handle(&mut self, msg: GetAnswersByOption, _ctx: &mut Self::Context) -> Self::Result {
-//         use crate::schema::answers;
-//         use crate::schema::answers::dsl::option_id;
-//
-//         let connection: &MysqlConnection =
-//             &self.0.get().expect("Unable to get database connection.");
-//
-//         let answers: Vec<Answer> = answers::table
-//             .filter(option_id.eq(msg.option_id))
-//             .load(connection)?;
-//
-//         Ok(answers)
-//     }
-// }
+    let answers = block(move || get_answer_by_option_id(option_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(answers))
+}

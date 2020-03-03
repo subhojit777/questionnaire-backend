@@ -229,13 +229,7 @@
 //!
 //! #### Get answers for an option
 //!
-//! **Endpoint:** `/answers-option`
-//!
-//! **Parameters:**
-//!
-//! ```txt
-//! option_id: <id>
-//! ```
+//! **Endpoint:** `/answers-option/{option_id}`
 //!
 //! **Method:** GET
 //!
