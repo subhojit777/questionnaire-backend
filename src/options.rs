@@ -1,6 +1,10 @@
+use crate::middleware::GitHubUserId;
+use crate::models::{NewOption, NewOptionJson};
+use crate::DbPool;
 use actix::{Handler, Message};
-use actix_web::web::{Json, Path, Query};
+use actix_web::web::{block, Data, Json, Path, Query};
 use actix_web::Error;
+use actix_web::{get, post};
 use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -15,25 +19,15 @@ use serde_json::ser::State;
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
-impl Message for NewOption {
-    type Result = Result<(), DieselError>;
-}
+fn new_option(record: NewOption, connection: &MysqlConnection) -> Result<(), DieselError> {
+    use schema::options::dsl::options;
 
-impl Handler<NewOption> for DbExecutor {
-    type Result = Result<(), DieselError>;
+    diesel::insert_into(options)
+        .values(&record)
+        .execute(connection)
+        .expect("Error saving the option.");
 
-    fn handle(&mut self, msg: NewOption, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::options::dsl::options;
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection");
-
-        diesel::insert_into(options)
-            .values(&msg)
-            .execute(connection)
-            .expect("Error saving the option.");
-
-        Ok(())
-    }
+    Ok(())
 }
 
 impl Message for GetOption {
@@ -92,39 +86,27 @@ impl Handler<GetOptionsByQuestion> for DbExecutor {
 /// ```
 ///
 /// Response: 200 OK
-pub fn post(
-    data: Json<NewOptionJson>,
-    state: State,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let gh_user_id_session = req
-        .session()
-        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
-        .into_future();
-
+#[post("/options")]
+pub async fn post(pool: Data<DbPool>, data: Json<NewOptionJson>) -> Result<HttpResponse, Error> {
+    // TODO: Implement retrieval of user_id from session.
+    let gh_user_id_session = Some(GitHubUserId { id: 1 });
+    let input = data.into_inner();
     let now = Utc::now();
 
-    gh_user_id_session
-        .from_err()
-        .and_then(move |gh_user_id| {
-            let input = data.into_inner();
-            let new_option = NewOption::new(
-                input.data,
-                gh_user_id.unwrap().id,
-                input.question_id,
-                now.naive_utc(),
-            );
+    return if let Some(user_id) = gh_user_id_session {
+        let connection = pool.get().expect("unable to get database connection.");
+        let record = NewOption::new(input.data, user_id.id, input.question_id, now.naive_utc());
 
-            state
-                .db
-                .send(new_option)
-                .from_err()
-                .and_then(|response| match response {
-                    Ok(_) => Ok(HttpResponse::Ok().finish()),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-                })
-        })
-        .responder()
+        block(move || new_option(record, &connection))
+            .await
+            .map_err(|_| {
+                return HttpResponse::InternalServerError().finish()?;
+            });
+
+        Ok(HttpResponse::Ok().finish())
+    } else {
+        Ok(HttpResponse::BadRequest().finish())
+    };
 }
 
 /// `/options/{id}` GET
