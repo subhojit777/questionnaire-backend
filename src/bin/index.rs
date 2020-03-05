@@ -52,6 +52,9 @@ async fn main() -> std::io::Result<()> {
             .service(answers::post)
             .service(answers::get)
             .service(answers::get_by_option)
+            .service(options::post)
+            .service(options::get)
+            .service(options::get_by_question)
         // .resource("/answers/{id}", |r| {
         //     r.method(Method::GET).with_async(answers::get)
         // })

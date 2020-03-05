@@ -13,14 +13,10 @@ use diesel::result::Error as DieselError;
 use diesel::MysqlConnection;
 use futures::future::IntoFuture;
 use futures::Future;
-use middleware::GitHubUserId;
-use models::{GetOption, GetOptionsByQuestion, NewOption, NewOptionJson, Option};
 use serde_json::ser::State;
-use GH_USER_SESSION_ID_KEY;
-use {AppState, DbExecutor};
 
 fn new_option(record: NewOption, connection: &MysqlConnection) -> Result<(), DieselError> {
-    use schema::options::dsl::options;
+    use crate::schema::options::dsl::options;
 
     diesel::insert_into(options)
         .values(&record)
@@ -36,26 +32,16 @@ fn get_option(option_id: i32, connection: &MysqlConnection) -> Result<Option, Di
     options.filter(id.eq(option_id)).first::<Option>(connection)
 }
 
-impl Message for GetOptionsByQuestion {
-    type Result = Result<Vec<Option>, DieselError>;
-}
+fn get_option_by_question_id(
+    id: i32,
+    connection: &MysqlConnection,
+) -> Result<Vec<Option>, DieselError> {
+    use crate::schema::options;
+    use crate::schema::options::dsl::question_id;
 
-impl Handler<GetOptionsByQuestion> for DbExecutor {
-    type Result = Result<Vec<Option>, DieselError>;
+    let options = options::table.filter(question_id.eq(id)).load(connection)?;
 
-    fn handle(&mut self, msg: GetOptionsByQuestion, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::options;
-        use schema::options::dsl::question_id;
-
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection.");
-
-        let options: Vec<Option> = options::table
-            .filter(question_id.eq(msg.question_id))
-            .load(connection)?;
-
-        Ok(options)
-    }
+    Ok(options)
 }
 
 /// `/options` POST
@@ -87,9 +73,7 @@ pub async fn post(pool: Data<DbPool>, data: Json<NewOptionJson>) -> Result<HttpR
 
         block(move || new_option(record, &connection))
             .await
-            .map_err(|_| {
-                return HttpResponse::InternalServerError().finish()?;
-            });
+            .map_err(|_| HttpResponse::InternalServerError().finish());
 
         Ok(HttpResponse::Ok().finish())
     } else {
@@ -123,11 +107,7 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
 
 /// Returns options for a question.
 ///
-/// `/options-question` GET
-///
-/// Parameters:
-///
-/// question_id: {id}
+/// `/options-question/{question_id}` GET
 ///
 /// Response:
 /// ```json
@@ -141,20 +121,14 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
 ///     }
 /// ]
 /// ```
-pub fn get_by_question(
-    data: Query<GetOptionsByQuestion>,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let state: &AppState = req.state();
+#[get("/options-question/{id}")]
+pub async fn get_by_question(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("unable to get database connection.");
+    let question_id = data.into_inner();
 
-    state
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+    let results = block(move || get_option_by_question_id(question_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(results))
 }

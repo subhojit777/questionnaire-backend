@@ -189,13 +189,7 @@
 //!
 //! #### Get options for a question
 //!
-//! **Endpoint:** `/options-question`
-//!
-//! **Parameters:**
-//!
-//! ```txt
-//! question_id: <id>
-//! ```
+//! **Endpoint:** `/options-question/{question_id}`
 //!
 //! **Method:** GET
 //!
