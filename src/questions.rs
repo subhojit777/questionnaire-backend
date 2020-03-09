@@ -1,5 +1,8 @@
+use crate::middleware::GitHubUserId;
+use crate::models::{NewQuestion, NewQuestionJson, Questions};
+use crate::DbPool;
 use actix::{Handler, Message};
-use actix_web::web::{Json, Path, Query};
+use actix_web::web::{block, Data, Json, Path, Query};
 use actix_web::{Error, HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -12,42 +15,23 @@ use serde_json::ser::State;
 use GH_USER_SESSION_ID_KEY;
 use {AppState, DbExecutor};
 
-impl Message for NewQuestion {
-    type Result = Result<(), DieselError>;
+fn new_question(input: NewQuestion, connection: &MysqlConnection) -> Result<(), DieselError> {
+    use crate::schema::questions::dsl::questions;
+
+    diesel::insert_into(questions)
+        .values(input)
+        .execute(connection)
+        .expect("Error saving the question");
+
+    Ok(())
 }
 
-impl Handler<NewQuestion> for DbExecutor {
-    type Result = Result<(), DieselError>;
+fn get_question(question_id: i32, connection: &MysqlConnection) -> Result<Questions, DieselError> {
+    use crate::schema::questions::dsl::{id, questions};
 
-    fn handle(&mut self, msg: NewQuestion, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::questions::dsl::questions;
-        let connection: &MysqlConnection = &self.0.get().unwrap();
+    let result: Questions = questions.filter(id.eq(question_id)).first(connection)?;
 
-        diesel::insert_into(questions)
-            .values(&msg)
-            .execute(connection)
-            .expect("Error saving the question");
-
-        Ok(())
-    }
-}
-
-impl Message for GetQuestion {
-    type Result = Result<Questions, DieselError>;
-}
-
-impl Handler<GetQuestion> for DbExecutor {
-    type Result = Result<Questions, DieselError>;
-
-    fn handle(&mut self, msg: GetQuestion, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::questions::dsl::{id, questions};
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection.");
-
-        let result: Questions = questions.filter(id.eq(&msg.0)).first(connection)?;
-
-        Ok(result)
-    }
+    Ok(result)
 }
 
 impl Message for GetQuestionByPresentation {
@@ -87,39 +71,30 @@ impl Handler<GetQuestionByPresentation> for DbExecutor {
 /// ```
 ///
 /// Response: 200 OK
-pub fn post(
-    data: Json<NewQuestionJson>,
-    state: State,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let gh_user_id_session = req
-        .session()
-        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
-        .into_future();
-
+#[post("/questions")]
+pub async fn post(pool: Data<DbPool>, data: Json<NewQuestionJson>) -> Result<HttpResponse, Error> {
+    // TODO: Implement retrieval of user_id from session.
+    let gh_user_id_session = Some(GitHubUserId { id: 1 });
     let now = Utc::now();
+    let input = data.into_inner();
 
-    gh_user_id_session
-        .from_err()
-        .and_then(move |gh_user_id| {
-            let input = data.into_inner();
-            let new_question = NewQuestion::new(
-                input.title,
-                now.naive_utc(),
-                input.presentation_id,
-                gh_user_id.unwrap().id,
-            );
+    return if let Some(user_id) = gh_user_id_session {
+        let record = NewQuestion::new(
+            input.title,
+            now.naive_utc(),
+            input.presentation_id,
+            user_id.id,
+        );
+        let connection = pool.get().expect("Unable to get database connection.");
 
-            state
-                .db
-                .send(new_question)
-                .from_err()
-                .and_then(|response| match response {
-                    Ok(_) => Ok(HttpResponse::Ok().finish()),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-                })
-        })
-        .responder()
+        block(move || new_question(record, &connection))
+            .await
+            .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+        Ok(HttpResponse::Ok().finish())
+    } else {
+        Ok(HttpResponse::BadRequest().finish())
+    };
 }
 
 /// `/questions/{id}` GET
@@ -134,22 +109,16 @@ pub fn post(
 ///    "user_id": 7,
 /// }
 /// ```
-pub fn get(
-    data: Path<GetQuestion>,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let state: &AppState = req.state();
+#[get("/questions/{id}")]
+pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("Unable to get database connection.");
+    let question_id = data.into_inner();
 
-    state
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+    let result = block(move || get_question(question_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// Returns questions for a presentation.
