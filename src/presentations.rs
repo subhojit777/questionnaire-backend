@@ -1,20 +1,17 @@
 use crate::middleware::GitHubUserId;
-use crate::models::{NewPresentation, PresentationInput};
+use crate::models::{NewPresentation, Presentation, PresentationInput};
 use crate::DbPool;
 use actix::{Handler, Message};
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
+use actix_web::{get, post};
 use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use futures::Future;
 use futures::IntoFuture;
-use middleware::GitHubUserId;
-use models::{GetPresentation, NewPresentation, Presentation, PresentationInput};
 use serde_json::ser::State;
-use GH_USER_SESSION_ID_KEY;
-use {error, DbExecutor};
 
 fn new_presentation(
     data: NewPresentation,
@@ -30,22 +27,17 @@ fn new_presentation(
     Ok(())
 }
 
-impl Message for GetPresentation {
-    type Result = Result<Presentation, DieselError>;
-}
+fn get_presentation(
+    presentation_id: i32,
+    connection: &MysqlConnection,
+) -> Result<Presentation, DieselError> {
+    use crate::schema::presentations::dsl::{id, presentations};
 
-impl Handler<GetPresentation> for DbExecutor {
-    type Result = Result<Presentation, DieselError>;
+    let result: Presentation = presentations
+        .filter(id.eq(presentation_id))
+        .first(connection)?;
 
-    fn handle(&mut self, msg: GetPresentation, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::presentations::dsl::{id, presentations};
-
-        let connection: &MysqlConnection = &self.0.get().unwrap();
-
-        let result: Presentation = presentations.filter(id.eq(&msg.0)).first(connection)?;
-
-        Ok(result)
-    }
+    Ok(result)
 }
 
 /// `/presentations` POST
@@ -98,18 +90,14 @@ pub async fn post(
 ///    "created": "2019-11-01T14:30:30"
 /// }
 /// ```
-pub fn get(
-    data: Path<GetPresentation>,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    req.state()
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+#[get("/presentations/{id}")]
+pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("Unable to get database connection.");
+    let presentation_id = data.into_inner();
+
+    let result = block(move || get_presentation(presentation_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(result))
 }
