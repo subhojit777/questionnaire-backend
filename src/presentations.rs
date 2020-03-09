@@ -1,5 +1,8 @@
+use crate::middleware::GitHubUserId;
+use crate::models::{NewPresentation, PresentationInput};
+use crate::DbPool;
 use actix::{Handler, Message};
-use actix_web::web::{Json, Path};
+use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
 use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
@@ -13,25 +16,18 @@ use serde_json::ser::State;
 use GH_USER_SESSION_ID_KEY;
 use {error, DbExecutor};
 
-impl Message for NewPresentation {
-    type Result = Result<(), error::Db>;
-}
+fn new_presentation(
+    data: NewPresentation,
+    connection: &MysqlConnection,
+) -> Result<(), DieselError> {
+    use crate::schema::presentations::dsl::presentations;
 
-impl Handler<NewPresentation> for DbExecutor {
-    type Result = Result<(), error::Db>;
+    diesel::insert_into(presentations)
+        .values(data)
+        .execute(connection)
+        .expect("Error saving the presentation");
 
-    fn handle(&mut self, msg: NewPresentation, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::presentations::dsl::presentations;
-
-        let connection: &MysqlConnection = &self.0.get().unwrap();
-
-        diesel::insert_into(presentations)
-            .values(&msg)
-            .execute(connection)
-            .expect("Error saving the presentation");
-
-        Ok(())
-    }
+    Ok(())
 }
 
 impl Message for GetPresentation {
@@ -67,35 +63,28 @@ impl Handler<GetPresentation> for DbExecutor {
 /// ```
 ///
 /// Response: 200 OK
-pub fn post(
+#[post("/presentations")]
+pub async fn post(
+    pool: Data<DbPool>,
     data: Json<PresentationInput>,
-    state: State,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let gh_user_id_session = req
-        .session()
-        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
-        .into_future();
-
+) -> Result<HttpResponse, Error> {
+    // TODO: Implement retrieval of user_id from session.
+    let gh_user_id_session = Some(GitHubUserId { id: 1 });
     let now = Utc::now();
+    let input = data.into_inner();
 
-    gh_user_id_session
-        .from_err()
-        .and_then(move |gh_user_id| {
-            let input = data.into_inner();
-            let new_presentation =
-                NewPresentation::new(input.title, gh_user_id.unwrap().id, now.naive_utc());
+    return if let Some(user_id) = gh_user_id_session {
+        let record = NewPresentation::new(input.title, user_id.id, now.naive_utc());
+        let connection = pool.get().expect("Unable to get database connection.");
 
-            state
-                .db
-                .send(new_presentation)
-                .from_err()
-                .and_then(|response| match response {
-                    Ok(_) => Ok(HttpResponse::Ok().finish()),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-                })
-        })
-        .responder()
+        block(move || new_presentation(record, &connection))
+            .await
+            .map_err(|_| HttpResponse::InternalServerError().finish());
+
+        Ok(HttpResponse::Ok().finish())
+    } else {
+        Ok(HttpResponse::BadRequest().finish())
+    };
 }
 
 /// `/presentations/{id}` GET
