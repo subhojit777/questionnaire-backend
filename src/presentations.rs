@@ -1,17 +1,14 @@
 use crate::middleware::GitHubUserId;
 use crate::models::{NewPresentation, Presentation, PresentationInput};
 use crate::DbPool;
-use actix::{Handler, Message};
+
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
+use actix_web::HttpResponse;
 use actix_web::{get, post};
-use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use futures::Future;
-use futures::IntoFuture;
-use serde_json::ser::State;
 
 fn new_presentation(
     data: NewPresentation,
@@ -71,7 +68,7 @@ pub async fn post(
 
         block(move || new_presentation(record, &connection))
             .await
-            .map_err(|_| HttpResponse::InternalServerError().finish());
+            .map_err(|_| HttpResponse::InternalServerError().finish())?;
 
         Ok(HttpResponse::Ok().finish())
     } else {

@@ -1,5 +1,5 @@
 use actix_session::Session;
-use actix_web::{get, HttpRequest, HttpResponse};
+use actix_web::{get, HttpResponse};
 
 /// Logs out the user.
 ///

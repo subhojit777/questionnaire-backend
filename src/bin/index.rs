@@ -1,17 +1,17 @@
-use actix::SyncArbiter;
+
 use actix_cors::Cors;
-use actix_service::Service;
-use actix_session::{CookieSession, Session, UserSession};
-use actix_web::dev::Factory;
+
+use actix_session::{CookieSession};
+
 use actix_web::http::{header, Method};
 use actix_web::middleware::Logger;
-use actix_web::{App, HttpResponse};
-use actix_web::{HttpRequest, HttpServer};
+use actix_web::{App};
+use actix_web::{HttpServer};
 use chrono::Duration;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
 use dotenv::dotenv;
-use questionnaire_rs::middleware::GitHubUserId;
+
 use questionnaire_rs::*;
 use std::env;
 

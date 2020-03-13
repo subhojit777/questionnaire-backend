@@ -1,18 +1,13 @@
 use crate::middleware::GitHubUserId;
-use crate::models::{
-    GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Questions,
-};
+use crate::models::{NewQuestion, NewQuestionJson, Questions};
 use crate::DbPool;
-use actix::{Handler, Message};
-use actix_web::web::{block, Data, Json, Path, Query};
+
+use actix_web::web::{block, Data, Json, Path};
 use actix_web::{get, post};
-use actix_web::{Error, HttpRequest, HttpResponse};
+use actix_web::{Error, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use futures::Future;
-use futures::IntoFuture;
-use serde_json::ser::State;
 
 fn new_question(input: NewQuestion, connection: &MysqlConnection) -> Result<(), DieselError> {
     use crate::schema::questions::dsl::questions;

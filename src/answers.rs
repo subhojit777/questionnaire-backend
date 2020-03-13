@@ -1,17 +1,15 @@
-use crate::{DbPool, GH_USER_SESSION_ID_KEY};
+use crate::DbPool;
 use actix_web::Error;
 
 use crate::middleware::GitHubUserId;
-use crate::models::{Answer, AnswerInput, GetAnswerById, GetAnswersByOption, NewAnswer};
+use crate::models::{Answer, AnswerInput, NewAnswer};
 use actix_session::Session;
-use actix_web::web::{block, Data, Json, Path, Query};
+use actix_web::web::{block, Data, Json, Path};
+use actix_web::HttpResponse;
 use actix_web::{get, post};
-use actix_web::{HttpRequest, HttpResponse};
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use futures::Future;
-use serde_json::ser::State;
 
 fn new_answer(
     option_id: i32,
@@ -92,7 +90,7 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
 
     let answer = block(move || get_answer_by_id(answer_id, &connection))
         .await
-        .map_err(|e| HttpResponse::InternalServerError().finish())?;
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
 
     Ok(HttpResponse::Ok().json(answer))
 }

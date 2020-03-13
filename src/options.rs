@@ -1,19 +1,16 @@
 use crate::middleware::GitHubUserId;
 use crate::models::{NewOption, NewOptionJson, Option};
 use crate::DbPool;
-use actix::{Handler, Message};
-use actix_web::web::{block, Data, Json, Path, Query};
+
+use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
+use actix_web::HttpResponse;
 use actix_web::{get, post};
-use actix_web::{HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::result::Error as DieselError;
 use diesel::MysqlConnection;
-use futures::future::IntoFuture;
-use futures::Future;
-use serde_json::ser::State;
 
 fn new_option(record: NewOption, connection: &MysqlConnection) -> Result<(), DieselError> {
     use crate::schema::options::dsl::options;
@@ -73,7 +70,7 @@ pub async fn post(pool: Data<DbPool>, data: Json<NewOptionJson>) -> Result<HttpR
 
         block(move || new_option(record, &connection))
             .await
-            .map_err(|_| HttpResponse::InternalServerError().finish());
+            .map_err(|_| HttpResponse::InternalServerError().finish())?;
 
         Ok(HttpResponse::Ok().finish())
     } else {
