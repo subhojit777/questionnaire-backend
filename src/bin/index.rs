@@ -1,12 +1,11 @@
-
 use actix_cors::Cors;
 
-use actix_session::{CookieSession};
+use actix_session::CookieSession;
 
 use actix_web::http::{header, Method};
 use actix_web::middleware::Logger;
-use actix_web::{App};
-use actix_web::{HttpServer};
+use actix_web::App;
+use actix_web::HttpServer;
 use chrono::Duration;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
@@ -60,37 +59,6 @@ async fn main() -> std::io::Result<()> {
             .service(questions::get)
             .service(questions::post)
             .service(questions::get_by_presentation)
-        // .resource("/answers/{id}", |r| {
-        //     r.method(Method::GET).with_async(answers::get)
-        // })
-        // .resource("/answers-option", |r| {
-        //     r.method(Method::GET).with_async(answers::get_by_option)
-        // })
-        // .resource("/presentations", |r| {
-        //     r.method(Method::POST).with_async(presentations::post)
-        // })
-        // .resource("/presentations/{id}", |r| {
-        //     r.method(Method::GET).with_async(presentations::get)
-        // })
-        // .resource("/questions", |r| {
-        //     r.method(Method::POST).with_async(questions::post)
-        // })
-        // .resource("/questions/{id}", |r| {
-        //     r.method(Method::GET).with_async(questions::get)
-        // })
-        // .resource("/questions-presentation", |r| {
-        //     r.method(Method::GET)
-        //         .with_async(questions::get_by_presentation)
-        // })
-        // .resource("/options", |r| {
-        //     r.method(Method::POST).with_async(options::post)
-        // })
-        // .resource("/options/{id}", |r| {
-        //     r.method(Method::GET).with_async(options::get)
-        // })
-        // .resource("/options-question", |r| {
-        //     r.method(Method::GET).with_async(options::get_by_question)
-        // })
     })
     .bind("127.0.0.1:8088")
     .unwrap()
