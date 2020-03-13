@@ -125,13 +125,7 @@
 //!
 //! #### Get questions for a presentation.
 //!
-//! **Endpoint:** `/questions-presentation`
-//!
-//! **Parameters:**
-//!
-//! ```txt
-//! presentation_id: <id>
-//! ```
+//! **Endpoint:** `/questions-presentation/{presentation_id}`
 //!
 //! **Method:** GET
 //!

@@ -1,19 +1,18 @@
 use crate::middleware::GitHubUserId;
-use crate::models::{NewQuestion, NewQuestionJson, Questions};
+use crate::models::{
+    GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Questions,
+};
 use crate::DbPool;
 use actix::{Handler, Message};
 use actix_web::web::{block, Data, Json, Path, Query};
+use actix_web::{get, post};
 use actix_web::{Error, HttpRequest, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use futures::Future;
 use futures::IntoFuture;
-use middleware::GitHubUserId;
-use models::{GetQuestion, GetQuestionByPresentation, NewQuestion, NewQuestionJson, Questions};
 use serde_json::ser::State;
-use GH_USER_SESSION_ID_KEY;
-use {AppState, DbExecutor};
 
 fn new_question(input: NewQuestion, connection: &MysqlConnection) -> Result<(), DieselError> {
     use crate::schema::questions::dsl::questions;
@@ -34,25 +33,18 @@ fn get_question(question_id: i32, connection: &MysqlConnection) -> Result<Questi
     Ok(result)
 }
 
-impl Message for GetQuestionByPresentation {
-    type Result = Result<Vec<Questions>, DieselError>;
-}
+fn get_question_by_presentation(
+    presentation_id: i32,
+    connection: &MysqlConnection,
+) -> Result<Vec<Questions>, DieselError> {
+    use crate::schema::questions;
+    use crate::schema::questions::dsl::presentation_id as pid;
 
-impl Handler<GetQuestionByPresentation> for DbExecutor {
-    type Result = Result<Vec<Questions>, DieselError>;
+    let questions: Vec<Questions> = questions::table
+        .filter(pid.eq(presentation_id))
+        .load(connection)?;
 
-    fn handle(&mut self, msg: GetQuestionByPresentation, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::questions;
-        use schema::questions::dsl::presentation_id;
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection.");
-
-        let questions: Vec<Questions> = questions::table
-            .filter(presentation_id.eq(msg.presentation_id))
-            .load(connection)?;
-
-        Ok(questions)
-    }
+    Ok(questions)
 }
 
 /// `/questions` POST
@@ -123,11 +115,7 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
 
 /// Returns questions for a presentation.
 ///
-/// `/questions-presentation` GET
-///
-/// Parameters:
-///
-/// presentation_id: <presentation_id>
+/// `/questions-presentation/{presentation_id}` GET
 ///
 /// Response:
 /// ```json
@@ -141,20 +129,17 @@ pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Er
 ///     }
 /// ]
 /// ```
-pub fn get_by_presentation(
-    data: Query<GetQuestionByPresentation>,
-    req: HttpRequest,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let state: &AppState = req.state();
+#[get("/questions-presentation/{id}")]
+pub async fn get_by_presentation(
+    pool: Data<DbPool>,
+    data: Path<i32>,
+) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("Could not connect to database");
+    let presentation_id = data.into_inner();
 
-    state
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+    let results = block(move || get_question_by_presentation(presentation_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(results))
 }
