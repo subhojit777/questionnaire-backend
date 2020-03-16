@@ -2,6 +2,7 @@ use crate::schema::answers;
 use crate::schema::options;
 use crate::schema::presentations;
 use crate::schema::questions;
+use crate::schema::users;
 use chrono::NaiveDateTime;
 use diesel::Insertable;
 use diesel::Queryable;
@@ -227,4 +228,12 @@ pub struct GetOptionsByQuestion {
 #[table_name = "answers"]
 pub struct GetAnswersByOption {
     pub option_id: i32,
+}
+
+#[derive(Queryable, Serialize, Deserialize, Identifiable)]
+#[table_name = "users"]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub created: NaiveDateTime,
 }
