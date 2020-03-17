@@ -1,7 +1,8 @@
-use crate::middleware::GitHubUserId;
 use crate::models::{NewQuestion, NewQuestionJson, Questions};
 use crate::DbPool;
 
+use crate::session::get_user_by_name;
+use actix_identity::Identity;
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::{get, post};
 use actix_web::{Error, HttpResponse};
@@ -59,29 +60,34 @@ fn get_question_by_presentation(
 ///
 /// Response: 200 OK
 #[post("/questions")]
-pub async fn post(pool: Data<DbPool>, data: Json<NewQuestionJson>) -> Result<HttpResponse, Error> {
-    // TODO: Implement retrieval of user_id from session.
-    let gh_user_id_session = Some(GitHubUserId { id: 1 });
-    let now = Utc::now();
-    let input = data.into_inner();
+pub async fn post(
+    pool: Data<DbPool>,
+    data: Json<NewQuestionJson>,
+    id: Identity,
+) -> Result<HttpResponse, Error> {
+    if let Some(name) = id.identity() {
+        let connection = pool.get().expect("Unable to get database connection.");
 
-    return if let Some(user_id) = gh_user_id_session {
-        let record = NewQuestion::new(
-            input.title,
-            now.naive_utc(),
-            input.presentation_id,
-            user_id.id,
-        );
+        let user = block(move || get_user_by_name(name, &connection))
+            .await
+            .map_err(|_| HttpResponse::InternalServerError().body("Could not find user."))?;
+
+        let now = Utc::now();
+        let input = data.into_inner();
+        let record = NewQuestion::new(input.title, now.naive_utc(), input.presentation_id, user.id);
+        // TODO: Try not to retrieve the connection again.
         let connection = pool.get().expect("Unable to get database connection.");
 
         block(move || new_question(record, &connection))
             .await
-            .map_err(|_| HttpResponse::InternalServerError().finish())?;
+            .map_err(|_| {
+                HttpResponse::InternalServerError().body("Could not create new question.")
+            })?;
 
         Ok(HttpResponse::Ok().finish())
     } else {
-        Ok(HttpResponse::BadRequest().finish())
-    };
+        return Ok(HttpResponse::BadRequest().body("could not identify the user."));
+    }
 }
 
 /// `/questions/{id}` GET
@@ -97,7 +103,8 @@ pub async fn post(pool: Data<DbPool>, data: Json<NewQuestionJson>) -> Result<Htt
 /// }
 /// ```
 #[get("/questions/{id}")]
-pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+pub async fn get(pool: Data<DbPool>, data: Path<i32>, id: Identity) -> Result<HttpResponse, Error> {
+    dbg!(id.identity());
     let connection = pool.get().expect("Unable to get database connection.");
     let question_id = data.into_inner();
 

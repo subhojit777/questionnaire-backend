@@ -230,7 +230,7 @@ pub struct GetAnswersByOption {
     pub option_id: i32,
 }
 
-#[derive(Queryable, Serialize, Deserialize, Identifiable)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Debug)]
 #[table_name = "users"]
 pub struct User {
     pub id: i32,

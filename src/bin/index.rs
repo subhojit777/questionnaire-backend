@@ -1,16 +1,14 @@
 use actix_cors::Cors;
 
-use actix_session::CookieSession;
-
 use actix_web::http::{header, Method};
 use actix_web::middleware::Logger;
 use actix_web::App;
 use actix_web::HttpServer;
-use chrono::Duration;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
 use dotenv::dotenv;
 
+use actix_identity::{CookieIdentityPolicy, IdentityService};
 use questionnaire_rs::*;
 use std::env;
 
@@ -32,11 +30,11 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(pool.clone())
             .wrap(Logger::default())
-            .wrap(
-                CookieSession::signed(&[0; 32])
-                    .secure(false)
-                    .max_age(Duration::days(1).num_seconds()),
-            )
+            .wrap(IdentityService::new(
+                CookieIdentityPolicy::new(&[0; 32])
+                    .name("auth-cookie")
+                    .secure(false),
+            ))
             .wrap(
                 Cors::new()
                     .allowed_headers(vec![
@@ -59,6 +57,8 @@ async fn main() -> std::io::Result<()> {
             .service(questions::get)
             .service(questions::post)
             .service(questions::get_by_presentation)
+            .service(session::login)
+            .service(session::logout)
     })
     .bind("127.0.0.1:8088")
     .unwrap()
