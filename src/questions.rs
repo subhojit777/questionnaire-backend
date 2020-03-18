@@ -48,7 +48,10 @@ fn get_question_by_presentation(
 /// Headers:
 ///
 /// Content type: application/json
-/// Authorization: token <access_token>
+///
+/// Cookies:
+///
+/// auth-cookie: <cookie_value>
 ///
 /// Body:
 /// ```json

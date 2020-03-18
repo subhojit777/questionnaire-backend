@@ -33,7 +33,10 @@ fn new_answer(
 /// Headers:
 ///
 /// Content type: application/json
-/// Authorization: token <access_token>
+///
+/// Cookies:
+///
+/// auth-cookie: <cookie_value>
 ///
 /// Body:
 /// ```json
