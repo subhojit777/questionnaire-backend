@@ -103,8 +103,7 @@ pub async fn post(
 /// }
 /// ```
 #[get("/questions/{id}")]
-pub async fn get(pool: Data<DbPool>, data: Path<i32>, id: Identity) -> Result<HttpResponse, Error> {
-    dbg!(id.identity());
+pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
     let connection = pool.get().expect("Unable to get database connection.");
     let question_id = data.into_inner();
 
