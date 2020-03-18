@@ -1,9 +1,9 @@
 use crate::DbPool;
 use actix_web::Error;
 
-use crate::middleware::GitHubUserId;
 use crate::models::{Answer, AnswerInput, NewAnswer};
-use actix_session::Session;
+use crate::session::get_user_by_name;
+use actix_identity::Identity;
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::HttpResponse;
 use actix_web::{get, post};
@@ -46,24 +46,30 @@ fn new_answer(
 #[post("/answers")]
 pub async fn post(
     pool: Data<DbPool>,
-    _session: Session,
     data: Json<AnswerInput>,
+    id: Identity,
 ) -> Result<HttpResponse, Error> {
-    // TODO: Implement retrieval of user_id from session.
-    let gh_user_id_session = Some(GitHubUserId { id: 1 });
+    if let Some(name) = id.identity() {
+        let connection = pool.get().expect("Could not get database connection.");
 
-    return if let Some(user_id) = gh_user_id_session {
+        let user = block(move || get_user_by_name(name, &connection))
+            .await
+            .map_err(|_| {
+                HttpResponse::InternalServerError().body("Unable to retrieve user by name.")
+            })?;
+
+        // TODO: Try not to retrieve the connection again.
         let connection = pool.get().expect("couldn't get db connection from pool");
         let input = data.into_inner();
 
-        block(move || new_answer(input.option_id, user_id.id, &connection))
+        block(move || new_answer(input.option_id, user.id, &connection))
             .await
             .map_err(|_| HttpResponse::InternalServerError().finish())?;
 
         Ok(HttpResponse::Ok().finish())
     } else {
-        Ok(HttpResponse::BadRequest().finish())
-    };
+        Ok(HttpResponse::BadRequest().body("Could not identify the user."))
+    }
 }
 
 fn get_answer_by_id(answer_id: i32, connection: &MysqlConnection) -> Result<Answer, DieselError> {
