@@ -59,13 +59,13 @@ pub fn login(data: Json<UserLogin>, id: Identity) -> HttpResponse {
 pub fn get_user_by_name(name: String, connection: &MysqlConnection) -> Result<User, DieselError> {
     use crate::schema::users::dsl::{name as user_name, users};
 
-    // TODO: This is creating new user everytime.
-    let result = users
-        .filter(user_name.eq(name.clone()))
-        .first(connection)
-        .unwrap_or(create_user(name.clone(), &connection)?);
+    let result = users.filter(user_name.eq(name.clone())).first(connection);
 
-    Ok(result)
+    if result.is_err() {
+        return create_user(name.clone(), &connection);
+    }
+
+    Ok(result.expect("Could not locate user by name."))
 }
 
 pub fn create_user(name: String, connection: &MysqlConnection) -> Result<User, DieselError> {
