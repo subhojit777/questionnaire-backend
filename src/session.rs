@@ -1,8 +1,9 @@
 use crate::models::User;
+use crate::DbPool;
 use actix_identity::Identity;
 use actix_session::Session;
 use actix_web::post;
-use actix_web::web::Json;
+use actix_web::web::{block, Data, Json};
 use actix_web::{get, HttpResponse};
 use chrono::Utc;
 use diesel::prelude::*;
@@ -50,10 +51,22 @@ pub fn logout(session: Session) -> HttpResponse {
 ///
 /// Response: 200 OK
 #[post("/login")]
-pub fn login(data: Json<UserLogin>, id: Identity) -> HttpResponse {
+pub async fn login(
+    data: Json<UserLogin>,
+    pool: Data<DbPool>,
+    id: Identity,
+) -> Result<HttpResponse, actix_web::Error> {
     let input = data.into_inner();
+    let connection = pool.get().expect("Could not get database connection");
+    let user_name = input.name.clone();
+
+    block(move || get_user_by_name(user_name, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().body("Something went wrong during login."))
+        .expect("Could not locate user by name during login.");
+
     id.remember(input.name);
-    HttpResponse::Ok().finish()
+    Ok(HttpResponse::Ok().finish())
 }
 
 pub fn get_user_by_name(name: String, connection: &MysqlConnection) -> Result<User, DieselError> {
