@@ -16,8 +16,8 @@ use std::env;
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
+    let server_address = env::var("ADDRESS").expect("Server ADDRESS must be set.");
 
-    // TODO: URL should come from environment variable.
     HttpServer::new(|| {
         let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
@@ -60,7 +60,7 @@ async fn main() -> std::io::Result<()> {
             .service(session::login)
             .service(session::logout)
     })
-    .bind("127.0.0.1:8088")
+    .bind(server_address)
     .unwrap()
     .run()
     .await
