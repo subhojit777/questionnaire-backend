@@ -285,15 +285,4 @@ pub mod schema;
 pub mod session;
 
 pub const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
-const SAFE_PATHS: [&str; 8] = [
-    "/gh-access-token",
-    "/answers/{id}",
-    "/presentations/{id}",
-    "/questions/{id}",
-    "/questions-presentation",
-    "/options/{id}",
-    "/options-question",
-    "/answers-option",
-];
-
 pub type DbPool = Pool<ConnectionManager<MysqlConnection>>;
