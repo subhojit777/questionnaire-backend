@@ -1,7 +1,8 @@
-use crate::middleware::GitHubUserId;
 use crate::models::{NewPresentation, Presentation, PresentationInput};
 use crate::DbPool;
 
+use crate::session::get_user_by_name;
+use actix_identity::Identity;
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
 use actix_web::HttpResponse;
@@ -56,24 +57,33 @@ fn get_presentation(
 pub async fn post(
     pool: Data<DbPool>,
     data: Json<PresentationInput>,
+    id: Identity,
 ) -> Result<HttpResponse, Error> {
-    // TODO: Implement retrieval of user_id from session.
-    let gh_user_id_session = Some(GitHubUserId { id: 1 });
-    let now = Utc::now();
-    let input = data.into_inner();
+    if let Some(user_name) = id.identity() {
+        let connection = pool.get().expect("Could not get database connection.");
 
-    return if let Some(user_id) = gh_user_id_session {
-        let record = NewPresentation::new(input.title, user_id.id, now.naive_utc());
+        let user = block(move || get_user_by_name(user_name, &connection))
+            .await
+            .map_err(|_| {
+                HttpResponse::InternalServerError().body("Could not locate user by name.")
+            })?;
+
+        let now = Utc::now();
+        let input = data.into_inner();
+        let record = NewPresentation::new(input.title, user.id, now.naive_utc());
+        // TODO: Try not to retrieve the connection again.
         let connection = pool.get().expect("Unable to get database connection.");
 
         block(move || new_presentation(record, &connection))
             .await
-            .map_err(|_| HttpResponse::InternalServerError().finish())?;
+            .map_err(|_| {
+                HttpResponse::InternalServerError().body("Could not create presentation.")
+            })?;
 
         Ok(HttpResponse::Ok().finish())
     } else {
-        Ok(HttpResponse::BadRequest().finish())
-    };
+        Ok(HttpResponse::BadRequest().body("Could not identify the user."))
+    }
 }
 
 /// `/presentations/{id}` GET
