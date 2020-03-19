@@ -62,7 +62,12 @@
 //!
 //! ```txt
 //! Content-type: application/json
-//! Authorization: token <access_token>
+//! ```
+//!
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
 //! ```
 //!
 //! **Body:**
@@ -161,7 +166,11 @@
 //!
 //! ```txt
 //! Content type: application/json
-//! Authorization: token <access_token>
+//! ```
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
 //! ```
 //!
 //! **Body:**

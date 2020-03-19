@@ -47,7 +47,10 @@ fn get_option_by_question_id(
 /// Headers:
 ///
 /// Content type: application/json
-/// Authorization: token <access_token>
+///
+/// Cookies:
+///
+/// auth-cookie: <cookie_value>
 ///
 /// Body:
 /// ```json
