@@ -1,7 +1,8 @@
-use crate::middleware::GitHubUserId;
 use crate::models::{NewOption, NewOptionJson, Option};
 use crate::DbPool;
 
+use crate::session::get_user_by_name;
+use actix_identity::Identity;
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
 use actix_web::HttpResponse;
@@ -58,15 +59,26 @@ fn get_option_by_question_id(
 ///
 /// Response: 200 OK
 #[post("/options")]
-pub async fn post(pool: Data<DbPool>, data: Json<NewOptionJson>) -> Result<HttpResponse, Error> {
-    // TODO: Implement retrieval of user_id from session.
-    let gh_user_id_session = Some(GitHubUserId { id: 1 });
-    let input = data.into_inner();
-    let now = Utc::now();
+pub async fn post(
+    pool: Data<DbPool>,
+    data: Json<NewOptionJson>,
+    id: Identity,
+) -> Result<HttpResponse, Error> {
+    if let Some(name) = id.identity() {
+        let connection = pool.get().expect("Could not get database connection.");
 
-    return if let Some(user_id) = gh_user_id_session {
+        let user = block(move || get_user_by_name(name, &connection))
+            .await
+            .map_err(|_| {
+                HttpResponse::InternalServerError()
+                    .body("Something went wrong while retrieving the user.")
+            })?;
+
+        let input = data.into_inner();
+        let now = Utc::now();
+        // TODO: Try not to retrieve the connection again.
         let connection = pool.get().expect("unable to get database connection.");
-        let record = NewOption::new(input.data, user_id.id, input.question_id, now.naive_utc());
+        let record = NewOption::new(input.data, user.id, input.question_id, now.naive_utc());
 
         block(move || new_option(record, &connection))
             .await
@@ -74,8 +86,8 @@ pub async fn post(pool: Data<DbPool>, data: Json<NewOptionJson>) -> Result<HttpR
 
         Ok(HttpResponse::Ok().finish())
     } else {
-        Ok(HttpResponse::BadRequest().finish())
-    };
+        Ok(HttpResponse::BadRequest().body("Could not identify user."))
+    }
 }
 
 /// `/options/{id}` GET
