@@ -1,6 +1,5 @@
 use actix_cors::Cors;
 
-use actix_web::http::{header, Method};
 use actix_web::middleware::Logger;
 use actix_web::App;
 use actix_web::HttpServer;
@@ -37,13 +36,8 @@ async fn main() -> std::io::Result<()> {
             ))
             .wrap(
                 Cors::new()
-                    .allowed_headers(vec![
-                        header::AUTHORIZATION,
-                        header::ACCEPT,
-                        header::CONTENT_TYPE,
-                    ])
-                    .allowed_methods(vec![Method::GET, Method::POST])
                     .allowed_origin(&front_end_base_url)
+                    .supports_credentials()
                     .finish(),
             )
             .service(answers::post)
