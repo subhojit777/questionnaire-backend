@@ -1,7 +1,6 @@
 use crate::models::User;
 use crate::DbPool;
 use actix_identity::Identity;
-use actix_session::Session;
 use actix_web::post;
 use actix_web::web::{block, Data, Json};
 use actix_web::{get, HttpResponse};
@@ -20,16 +19,10 @@ pub struct UserLogin {
 ///
 /// `/logout` GET
 ///
-/// Headers:
-///
-/// ```txt
-/// Authorization: token <access_token>
-/// ```
-///
 /// Response: 200 OK
 #[get("/logout")]
-pub fn logout(session: Session) -> HttpResponse {
-    session.clear();
+pub fn logout(id: Identity) -> HttpResponse {
+    id.forget();
     HttpResponse::Ok().finish()
 }
 
