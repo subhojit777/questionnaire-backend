@@ -258,6 +258,28 @@
 //!     }
 //! ]
 //! ```
+//!
+//! #### Check if a request is authenticated.
+//!
+//! If the authenticating cookie is not passed, or is not valid, then it will return false.
+//!
+//! **Endpoint:** `/is-logged-in`
+//!
+//! **Method:** GET
+//!
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!     "result": false,
+//! }
+//! ```
 
 extern crate chrono;
 extern crate env_logger;

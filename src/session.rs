@@ -62,6 +62,34 @@ pub async fn login(
     Ok(HttpResponse::Ok().finish())
 }
 
+/// Checks if the request is authenticated.
+///
+/// If the authenticating cookie is not passed, or is not valid, then it will return false.
+///
+/// `/is-logged-in` GET
+///
+/// Cookies (optional):
+///
+/// auth-cookie: <cookie_value>
+///
+/// Body:
+///
+/// ```json
+/// {
+///    "result": false,
+/// }
+/// ```
+///
+/// Response: 200 OK
+#[get("/is-logged-in")]
+pub async fn is_logged_in(id: Identity) -> Result<HttpResponse, actix_web::Error> {
+    return if let Some(_) = id.identity() {
+        Ok(HttpResponse::Ok().json(r#"{"result": true}"#))
+    } else {
+        Ok(HttpResponse::Ok().json(r#"{"result": false}"#))
+    };
+}
+
 pub fn get_user_by_name(name: String, connection: &MysqlConnection) -> Result<User, DieselError> {
     use crate::schema::users::dsl::{name as user_name, users};
 

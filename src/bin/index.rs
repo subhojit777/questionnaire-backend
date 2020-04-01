@@ -53,6 +53,7 @@ async fn main() -> std::io::Result<()> {
             .service(questions::get_by_presentation)
             .service(session::login)
             .service(session::logout)
+            .service(session::is_logged_in)
     })
     .bind(server_address)
     .unwrap()
