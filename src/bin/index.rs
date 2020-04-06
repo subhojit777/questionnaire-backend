@@ -54,6 +54,7 @@ async fn main() -> std::io::Result<()> {
             .service(session::login)
             .service(session::logout)
             .service(session::is_logged_in)
+            .service(web_socket::index)
     })
     .bind(server_address)
     .unwrap()

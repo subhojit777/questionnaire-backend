@@ -314,6 +314,7 @@ pub mod presentations;
 pub mod questions;
 pub mod schema;
 pub mod session;
+pub mod web_socket;
 
 pub const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
 pub type DbPool = Pool<ConnectionManager<MysqlConnection>>;
