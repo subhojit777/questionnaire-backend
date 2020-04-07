@@ -5,13 +5,14 @@ use actix_web::HttpRequest;
 use actix_web::{get, HttpResponse};
 use actix_web_actors::ws;
 use actix_web_actors::ws::WebsocketContext;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 
 struct WebSocket {
     presentation_id: i32,
     question_index: i32,
+    heart_beat: Instant,
 }
 
 impl WebSocket {
@@ -19,6 +20,7 @@ impl WebSocket {
         Self {
             presentation_id,
             question_index,
+            heart_beat: Instant::now(),
         }
     }
 
@@ -40,7 +42,16 @@ impl Actor for WebSocket {
 impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocket {
     fn handle(&mut self, item: Result<ws::Message, ProtocolError>, ctx: &mut Self::Context) {
         match item {
-            Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
+            Ok(ws::Message::Ping(msg)) => {
+                self.heart_beat = Instant::now();
+                ctx.pong(&msg);
+            }
+            Ok(ws::Message::Pong(_)) => {
+                self.heart_beat = Instant::now();
+            }
+            Ok(ws::Message::Text(text)) => ctx.text(text),
+            Ok(ws::Message::Binary(_)) => println!("Unexpected binary"),
+            Ok(ws::Message::Close(_)) => ctx.stop(),
             _ => ctx.stop(),
         }
     }
