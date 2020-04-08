@@ -34,10 +34,11 @@ fn get_question_by_presentation(
     connection: &MysqlConnection,
 ) -> Result<Vec<Questions>, DieselError> {
     use crate::schema::questions;
-    use crate::schema::questions::dsl::presentation_id as pid;
+    use crate::schema::questions::dsl::{created, presentation_id as pid};
 
     let questions: Vec<Questions> = questions::table
         .filter(pid.eq(presentation_id))
+        .order_by(created.asc())
         .load(connection)?;
 
     Ok(questions)
