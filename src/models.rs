@@ -8,7 +8,7 @@ use diesel::Insertable;
 use diesel::Queryable;
 use serde_derive::*;
 
-#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations, Debug)]
 #[belongs_to(Presentation, foreign_key = "presentation_id")]
 #[table_name = "questions"]
 pub struct Questions {

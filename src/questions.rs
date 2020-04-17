@@ -29,7 +29,7 @@ fn get_question(question_id: i32, connection: &MysqlConnection) -> Result<Questi
     Ok(result)
 }
 
-fn get_question_by_presentation(
+pub fn get_question_by_presentation(
     presentation_id: i32,
     connection: &MysqlConnection,
 ) -> Result<Vec<Questions>, DieselError> {

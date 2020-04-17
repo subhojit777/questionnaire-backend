@@ -1,3 +1,4 @@
+use crate::questions::get_question_by_presentation;
 use crate::DbPool;
 use actix::prelude::*;
 use actix_http::ws::ProtocolError;
@@ -9,27 +10,26 @@ use actix_web_actors::ws::WebsocketContext;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::PooledConnection;
 use diesel::MysqlConnection;
+use serde::Deserialize;
 use std::time::{Duration, Instant};
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 type PooledDatabaseConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
 
 struct WebSocket {
-    presentation_id: i32,
-    question_index: i32,
     heart_beat: Instant,
     db_connection: PooledDatabaseConnection,
 }
 
+#[derive(Deserialize)]
+struct WebSocketData {
+    presentation_id: i32,
+    question_index: usize,
+}
+
 impl WebSocket {
-    pub fn new(
-        presentation_id: i32,
-        question_index: i32,
-        db_connection: PooledDatabaseConnection,
-    ) -> Self {
+    pub fn new(db_connection: PooledDatabaseConnection) -> Self {
         Self {
-            presentation_id,
-            question_index,
             heart_beat: Instant::now(),
             db_connection,
         }
@@ -61,12 +61,18 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocket {
                 self.heart_beat = Instant::now();
             }
             Ok(ws::Message::Text(text)) => {
-                // TODO: Parse the message and return the next question index.
-                dbg!(&text);
+                let connection = &self.db_connection;
+
+                let message: WebSocketData = serde_json::from_str(&text)
+                    .expect("Unable to parse the text message from web socket");
+
+                let questions = get_question_by_presentation(message.presentation_id, connection)
+                    .expect("Unable to retrieve the questions for the presentation.");
+
+                dbg!(&questions[message.question_index]);
                 ctx.text(text);
             }
             Ok(ws::Message::Binary(_)) => println!("Unexpected binary"),
-            Ok(ws::Message::Close(_)) => ctx.stop(),
             _ => ctx.stop(),
         }
     }
@@ -79,6 +85,6 @@ pub async fn index(
     pool: Data<DbPool>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let connection = pool.get().expect("unable to get database connection");
-    let response = ws::start(WebSocket::new(-1, -1, connection), &request, stream);
+    let response = ws::start(WebSocket::new(connection), &request, stream);
     response
 }
