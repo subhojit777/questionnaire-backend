@@ -11,6 +11,7 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::PooledConnection;
 use diesel::MysqlConnection;
 use serde::Deserialize;
+use serde::Serialize;
 use std::time::{Duration, Instant};
 
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
@@ -22,9 +23,14 @@ struct WebSocket {
 }
 
 #[derive(Deserialize)]
-struct WebSocketData {
+struct WebSocketRequest {
     presentation_id: i32,
     question_index: usize,
+}
+
+#[derive(Serialize)]
+struct WebSocketResponse {
+    new_question_index: usize,
 }
 
 impl WebSocket {
@@ -63,14 +69,20 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocket {
             Ok(ws::Message::Text(text)) => {
                 let connection = &self.db_connection;
 
-                let message: WebSocketData = serde_json::from_str(&text)
+                let message: WebSocketRequest = serde_json::from_str(&text)
                     .expect("Unable to parse the text message from web socket");
 
                 let questions = get_question_by_presentation(message.presentation_id, connection)
                     .expect("Unable to retrieve the questions for the presentation.");
 
-                dbg!(&questions[message.question_index]);
-                ctx.text(text);
+                let next_question_index = message.question_index + 1;
+                let mut new_question_index: usize = 0;
+                if let Some(_) = questions.get(next_question_index) {
+                    new_question_index = next_question_index;
+                }
+
+                let response = WebSocketResponse { new_question_index };
+                ctx.text(serde_json::to_string(&response).expect("Could not parse to JSON."));
             }
             Ok(ws::Message::Binary(_)) => println!("Unexpected binary"),
             _ => ctx.stop(),
