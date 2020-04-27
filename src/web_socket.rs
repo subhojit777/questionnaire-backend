@@ -17,6 +17,12 @@ use std::time::{Duration, Instant};
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 type PooledDatabaseConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
 
+#[derive(Deserialize)]
+enum Direction {
+    Forward,
+    Backward,
+}
+
 struct WebSocket {
     heart_beat: Instant,
     db_connection: PooledDatabaseConnection,
@@ -26,6 +32,7 @@ struct WebSocket {
 struct WebSocketRequest {
     presentation_id: i32,
     question_index: usize,
+    direction: Direction,
 }
 
 #[derive(Serialize)]
@@ -75,10 +82,25 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocket {
                 let questions = get_question_by_presentation(message.presentation_id, connection)
                     .expect("Unable to retrieve the questions for the presentation.");
 
-                let next_question_index = message.question_index + 1;
                 let mut new_question_index: usize = 0;
-                if let Some(_) = questions.get(next_question_index) {
-                    new_question_index = next_question_index;
+                let num_questions = questions.len();
+
+                match message.direction {
+                    Direction::Forward => {
+                        let next_question_index = message.question_index + 1;
+                        if next_question_index < num_questions
+                            && questions.get(next_question_index).is_some()
+                        {
+                            new_question_index = next_question_index;
+                        }
+                    }
+                    Direction::Backward => {
+                        if message.question_index > 0
+                            && questions.get(message.question_index).is_some()
+                        {
+                            new_question_index = message.question_index - 1;
+                        }
+                    }
                 }
 
                 let response = WebSocketResponse { new_question_index };
