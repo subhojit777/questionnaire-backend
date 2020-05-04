@@ -295,6 +295,7 @@ extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
 extern crate futures;
+extern crate rand;
 extern crate serde;
 extern crate serde_derive;
 extern crate time;
@@ -315,6 +316,7 @@ pub mod questions;
 pub mod schema;
 pub mod session;
 pub mod web_socket;
+pub mod web_socket_server;
 
 pub const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
 pub type DbPool = Pool<ConnectionManager<MysqlConnection>>;
