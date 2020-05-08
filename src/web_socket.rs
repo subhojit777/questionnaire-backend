@@ -1,5 +1,5 @@
 use crate::questions::get_question_by_presentation;
-use crate::web_socket_server::{Connect, WebSocketServer};
+use crate::web_socket_server::{ClientMessage, Connect, Message, WebSocketServer};
 use crate::DbPool;
 use actix::prelude::*;
 use actix_http::ws::ProtocolError;
@@ -84,6 +84,14 @@ impl Actor for WebSocketSession {
     }
 }
 
+impl Handler<Message> for WebSocketSession {
+    type Result = ();
+
+    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
+        ctx.text(msg.0);
+    }
+}
+
 impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocketSession {
     fn handle(&mut self, item: Result<ws::Message, ProtocolError>, ctx: &mut Self::Context) {
         match item {
@@ -125,8 +133,10 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocketSession {
                 }
 
                 let response = WebSocketResponse { new_question_index };
-                self.addr
-                    .do_send(serde_json::to_string(&response).expect("Could not parse to JSON."));
+                self.addr.do_send(ClientMessage {
+                    id: self.id,
+                    msg: serde_json::to_string(&response).expect("Could not parse to JSON."),
+                })
             }
             Ok(ws::Message::Binary(_)) => println!("Unexpected binary"),
             _ => ctx.stop(),
