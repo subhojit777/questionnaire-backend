@@ -75,7 +75,7 @@ impl Actor for WebSocketSession {
             .then(|res, actor, ctx| {
                 match res {
                     Ok(res) => actor.id = res,
-                    // Something went wrong with chat server.
+                    // Something went wrong with server.
                     _ => ctx.stop(),
                 }
                 fut::ready(())
