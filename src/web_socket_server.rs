@@ -12,6 +12,15 @@ pub struct WebSocketServer {
     rng: ThreadRng,
 }
 
+impl Default for WebSocketServer {
+    fn default() -> Self {
+        WebSocketServer {
+            sessions: HashMap::new(),
+            rng: rand::thread_rng(),
+        }
+    }
+}
+
 impl WebSocketServer {
     pub fn send_message(&self, message: &str, skip_id: usize) {
         for (id, recipient) in &self.sessions {

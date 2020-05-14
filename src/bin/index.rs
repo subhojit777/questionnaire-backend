@@ -1,3 +1,4 @@
+use actix::*;
 use actix_cors::Cors;
 
 use actix_web::middleware::Logger;
@@ -26,8 +27,11 @@ async fn main() -> std::io::Result<()> {
             .build(manager)
             .expect("Failed to create pool.");
 
+        let web_socket_server = web_socket_server::WebSocketServer::default().start();
+
         App::new()
             .data(pool.clone())
+            .data(web_socket_server.clone())
             .wrap(Logger::default())
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
