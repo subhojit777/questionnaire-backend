@@ -1,4 +1,5 @@
 use actix::prelude::*;
+use actix_broker::BrokerSubscribe;
 use rand::prelude::ThreadRng;
 use rand::Rng;
 use std::collections::HashMap;
@@ -6,6 +7,14 @@ use std::collections::HashMap;
 #[derive(Message)]
 #[rtype(result = "()")]
 pub struct Message(pub String);
+
+#[derive(Message, Clone)]
+#[rtype(result = "()")]
+pub struct SendMessage {
+    pub name: String,
+    pub id: usize,
+    pub content: String,
+}
 
 pub struct WebSocketServer {
     sessions: HashMap<usize, Recipient<Message>>,
@@ -22,24 +31,21 @@ impl Default for WebSocketServer {
 }
 
 impl WebSocketServer {
-    pub fn send_message(&self, message: &str, skip_id: usize) {
-        for (id, recipient) in &self.sessions {
-            if *id != skip_id {
-                let _ = recipient.do_send(Message(message.to_owned()));
-            }
+    pub fn send_message(&mut self, message: String) {
+        for (_id, recipient) in &self.sessions {
+            recipient
+                .do_send(Message(message.to_owned()))
+                .expect("Could not send message to the client.");
         }
     }
 }
 
-#[derive(Message)]
-#[rtype(result = "()")]
-pub struct ClientMessage {
-    pub id: usize,
-    pub msg: String,
-}
-
 impl Actor for WebSocketServer {
     type Context = Context<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        self.subscribe_system_async::<SendMessage>(ctx);
+    }
 }
 
 #[derive(Message)]
@@ -60,10 +66,13 @@ impl Handler<Connect> for WebSocketServer {
     }
 }
 
-impl Handler<ClientMessage> for WebSocketServer {
+impl Handler<SendMessage> for WebSocketServer {
     type Result = ();
 
-    fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) -> Self::Result {
-        self.send_message(msg.msg.as_str(), msg.id);
+    fn handle(&mut self, msg: SendMessage, _ctx: &mut Self::Context) {
+        self.send_message(msg.content);
     }
 }
+
+impl SystemService for WebSocketServer {}
+impl Supervised for WebSocketServer {}

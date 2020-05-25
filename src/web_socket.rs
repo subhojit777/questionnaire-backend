@@ -1,7 +1,9 @@
 use crate::questions::get_question_by_presentation;
-use crate::web_socket_server::{ClientMessage, Connect, Message, WebSocketServer};
+use crate::web_socket_server::Message;
+use crate::web_socket_server::SendMessage;
 use crate::DbPool;
 use actix::prelude::*;
+use actix_broker::BrokerIssue;
 use actix_http::ws::ProtocolError;
 use actix_web::web::{Data, Payload};
 use actix_web::HttpRequest;
@@ -13,9 +15,8 @@ use diesel::r2d2::PooledConnection;
 use diesel::MysqlConnection;
 use serde::Deserialize;
 use serde::Serialize;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(1);
 type PooledDatabaseConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
 
 #[derive(Deserialize)]
@@ -26,9 +27,9 @@ enum Direction {
 
 struct WebSocketSession {
     id: usize,
+    name: String,
     heart_beat: Instant,
     db_connection: PooledDatabaseConnection,
-    addr: Addr<WebSocketServer>,
 }
 
 #[derive(Deserialize)]
@@ -44,44 +45,28 @@ struct WebSocketResponse {
 }
 
 impl WebSocketSession {
-    pub fn new(db_connection: PooledDatabaseConnection, addr: Addr<WebSocketServer>) -> Self {
+    pub fn new(db_connection: PooledDatabaseConnection) -> Self {
         Self {
             id: 0,
+            name: "Main".to_owned(),
             heart_beat: Instant::now(),
             db_connection,
-            addr,
         }
     }
 
-    pub fn heart_beat(&self, ctx: &mut <Self as Actor>::Context) {
-        ctx.run_interval(HEARTBEAT_INTERVAL, |_, ctx| {
-            ctx.ping(b"");
-        });
+    pub fn send_msg(&self, msg: String) {
+        let msg = SendMessage {
+            name: self.name.clone(),
+            id: self.id,
+            content: msg,
+        };
+
+        self.issue_system_async(msg);
     }
 }
 
 impl Actor for WebSocketSession {
     type Context = WebsocketContext<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        self.heart_beat(ctx);
-
-        let addr = ctx.address();
-        self.addr
-            .send(Connect {
-                addr: addr.recipient(),
-            })
-            .into_actor(self)
-            .then(|res, actor, ctx| {
-                match res {
-                    Ok(res) => actor.id = res,
-                    // Something went wrong with server.
-                    _ => ctx.stop(),
-                }
-                fut::ready(())
-            })
-            .wait(ctx);
-    }
 }
 
 impl Handler<Message> for WebSocketSession {
@@ -133,10 +118,7 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocketSession {
                 }
 
                 let response = WebSocketResponse { new_question_index };
-                self.addr.do_send(ClientMessage {
-                    id: self.id,
-                    msg: serde_json::to_string(&response).expect("Could not parse to JSON."),
-                })
+                self.send_msg(serde_json::to_string(&response).expect("Could not parse to JSON."));
             }
             Ok(ws::Message::Binary(_)) => println!("Unexpected binary"),
             _ => ctx.stop(),
@@ -149,13 +131,8 @@ pub async fn index(
     request: HttpRequest,
     stream: Payload,
     pool: Data<DbPool>,
-    server: Data<Addr<WebSocketServer>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let connection = pool.get().expect("unable to get database connection");
-    let response = ws::start(
-        WebSocketSession::new(connection, server.get_ref().clone()),
-        &request,
-        stream,
-    );
+    let response = ws::start(WebSocketSession::new(connection), &request, stream);
     response
 }

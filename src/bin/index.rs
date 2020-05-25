@@ -1,4 +1,3 @@
-use actix::*;
 use actix_cors::Cors;
 
 use actix_web::middleware::Logger;
@@ -7,9 +6,9 @@ use actix_web::HttpServer;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
 use dotenv::dotenv;
+use questionnaire_rs::*;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
-use questionnaire_rs::*;
 use std::env;
 
 #[actix_rt::main]
@@ -27,11 +26,8 @@ async fn main() -> std::io::Result<()> {
             .build(manager)
             .expect("Failed to create pool.");
 
-        let web_socket_server = web_socket_server::WebSocketServer::default().start();
-
         App::new()
             .data(pool.clone())
-            .data(web_socket_server.clone())
             .wrap(Logger::default())
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
