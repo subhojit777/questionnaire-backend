@@ -1,6 +1,8 @@
 use crate::questions::get_question_by_presentation;
+use crate::web_socket_server::JoinSession;
 use crate::web_socket_server::Message;
 use crate::web_socket_server::SendMessage;
+use crate::web_socket_server::WebSocketServer;
 use crate::DbPool;
 use actix::prelude::*;
 use actix_broker::BrokerIssue;
@@ -67,6 +69,21 @@ impl WebSocketSession {
 
 impl Actor for WebSocketSession {
     type Context = WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let join_session = JoinSession(ctx.address().recipient());
+        WebSocketServer::from_registry()
+            .send(join_session)
+            .into_actor(self)
+            .then(|id, act, _ctx| {
+                if let Ok(id) = id {
+                    act.id = id;
+                }
+
+                fut::ready(())
+            })
+            .wait(ctx);
+    }
 }
 
 impl Handler<Message> for WebSocketSession {

@@ -16,6 +16,10 @@ pub struct SendMessage {
     pub content: String,
 }
 
+#[derive(Clone, Message)]
+#[rtype(result = "usize")]
+pub struct JoinSession(pub Recipient<Message>);
+
 pub struct WebSocketServer {
     sessions: HashMap<usize, Recipient<Message>>,
     rng: ThreadRng,
@@ -38,6 +42,14 @@ impl WebSocketServer {
                 .expect("Could not send message to the client.");
         }
     }
+
+    pub fn add_session(&mut self, client: Recipient<Message>) -> usize {
+        let id: usize = self.rng.gen();
+
+        self.sessions.insert(id, client);
+
+        id
+    }
 }
 
 impl Actor for WebSocketServer {
@@ -48,29 +60,23 @@ impl Actor for WebSocketServer {
     }
 }
 
-#[derive(Message)]
-#[rtype(usize)]
-pub struct Connect {
-    pub addr: Recipient<Message>,
-}
-
-impl Handler<Connect> for WebSocketServer {
-    type Result = usize;
-
-    fn handle(&mut self, msg: Connect, _ctx: &mut Context<Self>) -> Self::Result {
-        let id = self.rng.gen::<usize>();
-        // TODO: Not getting connected.
-        self.sessions.insert(id, msg.addr);
-
-        id
-    }
-}
-
 impl Handler<SendMessage> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: SendMessage, _ctx: &mut Self::Context) {
         self.send_message(msg.content);
+    }
+}
+
+impl Handler<JoinSession> for WebSocketServer {
+    type Result = MessageResult<JoinSession>;
+
+    fn handle(&mut self, msg: JoinSession, _ctx: &mut Self::Context) -> Self::Result {
+        let JoinSession(client) = msg;
+
+        let id = self.add_session(client);
+
+        MessageResult(id)
     }
 }
 
