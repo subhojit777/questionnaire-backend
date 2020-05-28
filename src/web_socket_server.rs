@@ -20,18 +20,10 @@ pub struct SendMessage {
 #[rtype(result = "usize")]
 pub struct JoinSession(pub Recipient<Message>);
 
+#[derive(Default)]
 pub struct WebSocketServer {
     sessions: HashMap<usize, Recipient<Message>>,
     rng: ThreadRng,
-}
-
-impl Default for WebSocketServer {
-    fn default() -> Self {
-        WebSocketServer {
-            sessions: HashMap::new(),
-            rng: rand::thread_rng(),
-        }
-    }
 }
 
 impl WebSocketServer {
