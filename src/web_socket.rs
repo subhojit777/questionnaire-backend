@@ -1,6 +1,7 @@
 use crate::questions::get_question_by_presentation;
 use crate::web_socket_server::JoinSession;
 use crate::web_socket_server::Message;
+use crate::web_socket_server::RemoveSession;
 use crate::web_socket_server::SendMessage;
 use crate::web_socket_server::WebSocketServer;
 use crate::DbPool;
@@ -82,6 +83,16 @@ impl Actor for WebSocketSession {
 
                 fut::ready(())
             })
+            .wait(ctx);
+    }
+
+    fn stopped(&mut self, ctx: &mut Self::Context) {
+        let remove_session = RemoveSession(self.id);
+
+        WebSocketServer::from_registry()
+            .send(remove_session)
+            .into_actor(self)
+            .then(|_, _, _| fut::ready(()))
             .wait(ctx);
     }
 }

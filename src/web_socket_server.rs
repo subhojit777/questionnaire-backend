@@ -20,6 +20,10 @@ pub struct SendMessage {
 #[rtype(result = "usize")]
 pub struct JoinSession(pub Recipient<Message>);
 
+#[derive(Clone, Message)]
+#[rtype(result = "()")]
+pub struct RemoveSession(pub usize);
+
 #[derive(Default)]
 pub struct WebSocketServer {
     sessions: HashMap<usize, Recipient<Message>>,
@@ -29,6 +33,7 @@ pub struct WebSocketServer {
 impl WebSocketServer {
     pub fn send_message(&mut self, message: String) {
         for (_id, recipient) in &self.sessions {
+            // TODO: This errors if a participant screen is refreshed.
             recipient
                 .do_send(Message(message.to_owned()))
                 .expect("Could not send message to the client.");
@@ -41,6 +46,10 @@ impl WebSocketServer {
         self.sessions.insert(id, client);
 
         id
+    }
+
+    pub fn remove_session(&mut self, session_id: usize) {
+        self.sessions.remove(&session_id);
     }
 }
 
@@ -69,6 +78,18 @@ impl Handler<JoinSession> for WebSocketServer {
         let id = self.add_session(client);
 
         MessageResult(id)
+    }
+}
+
+impl Handler<RemoveSession> for WebSocketServer {
+    type Result = MessageResult<RemoveSession>;
+
+    fn handle(&mut self, msg: RemoveSession, _ctx: &mut Self::Context) -> Self::Result {
+        let RemoveSession(id) = msg;
+
+        self.remove_session(id);
+
+        MessageResult(())
     }
 }
 
