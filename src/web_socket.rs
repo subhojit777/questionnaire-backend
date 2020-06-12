@@ -86,14 +86,10 @@ impl Actor for WebSocketSession {
             .wait(ctx);
     }
 
-    fn stopped(&mut self, ctx: &mut Self::Context) {
+    fn stopped(&mut self, _ctx: &mut Self::Context) {
         let remove_session = RemoveSession(self.id);
 
-        WebSocketServer::from_registry()
-            .send(remove_session)
-            .into_actor(self)
-            .then(|_, _, _| fut::ready(()))
-            .wait(ctx);
+        self.issue_system_async(remove_session);
     }
 }
 

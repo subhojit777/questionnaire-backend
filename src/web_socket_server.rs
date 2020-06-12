@@ -33,7 +33,6 @@ pub struct WebSocketServer {
 impl WebSocketServer {
     pub fn send_message(&mut self, message: String) {
         for (_id, recipient) in &self.sessions {
-            // TODO: This errors if a participant screen is refreshed.
             recipient
                 .do_send(Message(message.to_owned()))
                 .expect("Could not send message to the client.");
@@ -58,6 +57,7 @@ impl Actor for WebSocketServer {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.subscribe_system_async::<SendMessage>(ctx);
+        self.subscribe_system_async::<RemoveSession>(ctx);
     }
 }
 
