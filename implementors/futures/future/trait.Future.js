@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["questionnaire_rs"] = [{"text":"impl <a class=\"trait\" href=\"https://docs.rs/futures/0.1/futures/future/trait.Future.html\" title=\"trait futures::future::Future\">Future</a> for <a class=\"struct\" href=\"questionnaire_rs/helpers/header_map_wrapper/struct.HeaderMapWrapper.html\" title=\"struct questionnaire_rs::helpers::header_map_wrapper::HeaderMapWrapper\">HeaderMapWrapper</a>","synthetic":false,"types":["questionnaire_rs::helpers::header_map_wrapper::HeaderMapWrapper"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

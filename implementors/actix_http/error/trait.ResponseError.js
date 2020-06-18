@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["questionnaire_rs"] = [{"text":"impl ResponseError for <a class=\"struct\" href=\"questionnaire_rs/error/struct.Db.html\" title=\"struct questionnaire_rs::error::Db\">Db</a>","synthetic":false,"types":["questionnaire_rs::error::Db"]},{"text":"impl ResponseError for <a class=\"enum\" href=\"questionnaire_rs/error/enum.Oauth.html\" title=\"enum questionnaire_rs::error::Oauth\">Oauth</a>","synthetic":false,"types":["questionnaire_rs::error::Oauth"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

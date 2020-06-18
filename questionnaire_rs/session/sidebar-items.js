@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["create_user",""],["get_user_by_name",""]],"struct":[["UserLogin",""],["is_logged_in",""],["login",""],["logout",""]]});

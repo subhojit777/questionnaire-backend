@@ -1,0 +1,177 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `questionnaire_rs` crate."><meta name="keywords" content="rust, rustlang, rust-lang, questionnaire_rs"><title>questionnaire_rs - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="shortcut icon" href="../favicon.ico"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../questionnaire_rs/index.html'><div class='logo-container'><img src='../rust-logo.png' alt='logo'></div></a><p class='location'>Crate questionnaire_rs</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all questionnaire_rs's items</p></a><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#constants">Constants</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'questionnaire_rs', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/questionnaire_rs/lib.rs.html#1-322' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>questionnaire_rs</a></span></h1><div class='docblock'><p>Backend of the Questionnaire app.</p>
+<h3 id="api-endpoints-available" class="section-header"><a href="#api-endpoints-available">API endpoints available:</a></h3><h4 id="answers" class="section-header"><a href="#answers"><code>/answers</code></a></h4>
+<p><strong>Method:</strong> POST</p>
+<p><strong>Headers:</strong></p>
+<pre><code class="language-txt">Content-type: application/json
+</code></pre>
+<p><strong>Cookies:</strong></p>
+<pre><code class="language-txt">auth-cookie: &lt;cookie_value&gt;
+</code></pre>
+<p><strong>Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;option_id&quot;: 23
+}
+</code></pre>
+<p><strong>Response:</strong> 200 OK</p>
+<h4 id="answersid" class="section-header"><a href="#answersid"><code>/answers/{id}</code></a></h4>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+   &quot;id&quot;: 47,
+   &quot;user_id&quot;: 7,
+   &quot;created&quot;: &quot;2019-11-01T14:30:30&quot;,
+   &quot;option_id&quot;: 23
+}
+</code></pre>
+<h4 id="logout" class="section-header"><a href="#logout"><code>/logout</code></a></h4>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Headers:</strong></p>
+<pre><code class="language-txt">Authorization: token &lt;access_token&gt;
+</code></pre>
+<p><strong>Response:</strong> 200 OK</p>
+<h4 id="presentations" class="section-header"><a href="#presentations"><code>/presentations</code></a></h4>
+<p><strong>Method:</strong> POST</p>
+<p><strong>Headers:</strong></p>
+<pre><code class="language-txt">Content-type: application/json
+</code></pre>
+<p><strong>Cookies:</strong></p>
+<pre><code class="language-txt">auth-cookie: &lt;cookie_value&gt;
+</code></pre>
+<p><strong>Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;title&quot;: &quot;New Presentation&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> 200 OK</p>
+<h4 id="presentationsid" class="section-header"><a href="#presentationsid"><code>/presentations/{id}</code></a></h4>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+   &quot;id&quot;: 47,
+   &quot;title&quot;: &quot;New Presentation&quot;,
+   &quot;user_id&quot;: 7,
+   &quot;created&quot;: &quot;2019-11-01T14:30:30&quot;
+}
+</code></pre>
+<h4 id="questions" class="section-header"><a href="#questions"><code>/questions</code></a></h4>
+<p><strong>Method:</strong> POST</p>
+<p><strong>Headers:</strong></p>
+<pre><code class="language-txt">Content type: application/json
+</code></pre>
+<p><strong>Cookies:</strong></p>
+<pre><code class="language-txt">auth-cookie: &lt;cookie_value&gt;
+</code></pre>
+<p><strong>Body:</strong></p>
+<pre><code class="language-json">{
+   &quot;title&quot;: &quot;New Question&quot;,
+   &quot;presentation_id&quot;: 1,
+}
+</code></pre>
+<p><strong>Response:</strong> 200 OK</p>
+<h4 id="questionsid" class="section-header"><a href="#questionsid"><code>/questions/{id}</code></a></h4>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+   &quot;id&quot;: 23,
+   &quot;title&quot;: &quot;New Question&quot;,
+   &quot;created&quot;: &quot;2019-11-01T14:30:30&quot;,
+   &quot;presentation_id&quot;: 3,
+   &quot;user_id&quot;: 7,
+}
+</code></pre>
+<h4 id="get-questions-for-a-presentation" class="section-header"><a href="#get-questions-for-a-presentation">Get questions for a presentation.</a></h4>
+<p><strong>Endpoint:</strong> <code>/questions-presentation/{presentation_id}</code></p>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">[
+   {
+        &quot;id&quot;: 23,
+        &quot;title&quot;: &quot;New Question&quot;,
+        &quot;created&quot;: &quot;2019-11-01T14:30:30&quot;,
+        &quot;presentation_id&quot;: 3,
+        &quot;user_id&quot;: 7,
+    }
+]
+</code></pre>
+<h4 id="options" class="section-header"><a href="#options"><code>/options</code></a></h4>
+<p><strong>Method:</strong> POST</p>
+<p><strong>Headers:</strong></p>
+<pre><code class="language-txt">Content type: application/json
+</code></pre>
+<p><strong>Cookies:</strong></p>
+<pre><code class="language-txt">auth-cookie: &lt;cookie_value&gt;
+</code></pre>
+<p><strong>Body:</strong></p>
+<pre><code class="language-json">{
+   &quot;data&quot;: &quot;Option 1&quot;,
+   &quot;question_id&quot;: 1,
+}
+</code></pre>
+<p><strong>Response:</strong> 200 OK</p>
+<h4 id="optionsid" class="section-header"><a href="#optionsid"><code>/options/{id}</code></a></h4>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+   &quot;id&quot;: 12,
+   &quot;data&quot;: &quot;Option 1&quot;,
+   &quot;user_id&quot;: 9,
+   &quot;question_id&quot;: 1,
+   &quot;created&quot;: &quot;2019-06-19T03:40:50&quot;
+}
+</code></pre>
+<h4 id="get-options-for-a-question" class="section-header"><a href="#get-options-for-a-question">Get options for a question</a></h4>
+<p><strong>Endpoint:</strong> <code>/options-question/{question_id}</code></p>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">[
+   {
+        &quot;id&quot;: 12,
+        &quot;data&quot;: &quot;Option 1&quot;,
+        &quot;user_id&quot;: 9,
+        &quot;question_id&quot;: 1,
+        &quot;created&quot;: &quot;2019-06-19T03:40:50&quot;
+    }
+]
+</code></pre>
+<h4 id="gh-access-token" class="section-header"><a href="#gh-access-token"><code>/gh-access-token</code></a></h4>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Parameters:</strong></p>
+<pre><code class="language-txt">code: GITHUB_LOGIN_CODE obtained from https://github.com/login/oauth/authorize
+</code></pre>
+<p><strong>Response:</strong></p>
+<p>GITHUB_ACCESS_TOKEN in JSON.</p>
+<h4 id="get-answers-for-an-option" class="section-header"><a href="#get-answers-for-an-option">Get answers for an option</a></h4>
+<p><strong>Endpoint:</strong> <code>/answers-option/{option_id}</code></p>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">[
+   {
+        &quot;id&quot;: 12,
+        &quot;user_id&quot;: 9,
+        &quot;created&quot;: &quot;2019-06-19T03:40:50&quot;,
+        &quot;option_id&quot;: 1,
+    },
+   {
+        &quot;id&quot;: 13,
+        &quot;user_id&quot;: 18,
+        &quot;created&quot;: &quot;2019-06-30T03:40:50&quot;,
+        &quot;option_id&quot;: 3,
+    }
+]
+</code></pre>
+<h4 id="check-if-a-request-is-authenticated" class="section-header"><a href="#check-if-a-request-is-authenticated">Check if a request is authenticated.</a></h4>
+<p>If the authenticating cookie is not passed, or is not valid, then it will return false.</p>
+<p><strong>Endpoint:</strong> <code>/is-logged-in</code></p>
+<p><strong>Method:</strong> GET</p>
+<p><strong>Cookies:</strong></p>
+<pre><code class="language-txt">auth-cookie: &lt;cookie_value&gt;
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+    &quot;result&quot;: false,
+}
+</code></pre>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table><tr class='module-item'><td><a class="mod" href="answers/index.html" title='questionnaire_rs::answers mod'>answers</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="error/index.html" title='questionnaire_rs::error mod'>error</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="helpers/index.html" title='questionnaire_rs::helpers mod'>helpers</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="middleware/index.html" title='questionnaire_rs::middleware mod'>middleware</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="models/index.html" title='questionnaire_rs::models mod'>models</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="options/index.html" title='questionnaire_rs::options mod'>options</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="presentations/index.html" title='questionnaire_rs::presentations mod'>presentations</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="questions/index.html" title='questionnaire_rs::questions mod'>questions</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="schema/index.html" title='questionnaire_rs::schema mod'>schema</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="session/index.html" title='questionnaire_rs::session mod'>session</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="web_socket/index.html" title='questionnaire_rs::web_socket mod'>web_socket</a></td><td class='docblock-short'></td></tr><tr class='module-item'><td><a class="mod" href="web_socket_server/index.html" title='questionnaire_rs::web_socket_server mod'>web_socket_server</a></td><td class='docblock-short'></td></tr></table><h2 id='constants' class='section-header'><a href="#constants">Constants</a></h2>
+<table><tr class='module-item'><td><a class="constant" href="constant.GH_USER_SESSION_ID_KEY.html" title='questionnaire_rs::GH_USER_SESSION_ID_KEY constant'>GH_USER_SESSION_ID_KEY</a></td><td class='docblock-short'></td></tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
+<table><tr class='module-item'><td><a class="type" href="type.DbPool.html" title='questionnaire_rs::DbPool type'>DbPool</a></td><td class='docblock-short'></td></tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../";window.currentCrate = "questionnaire_rs";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>
