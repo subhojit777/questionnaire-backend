@@ -1,6 +1,6 @@
+use crate::error;
 use actix_web::http::HeaderMap;
-use futures::{Future, Async};
-use error;
+use futures::{Async, Future};
 
 /// Future implementation of actix_web::http::HeaderMap.
 pub struct HeaderMapWrapper {

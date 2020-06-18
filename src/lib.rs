@@ -9,7 +9,12 @@
 //!
 //! ```txt
 //! Content-type: application/json
-//! Authorization: token <access_token>
+//! ```
+//!
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
 //! ```
 //!
 //! **Body:**
@@ -57,7 +62,12 @@
 //!
 //! ```txt
 //! Content-type: application/json
-//! Authorization: token <access_token>
+//! ```
+//!
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
 //! ```
 //!
 //! **Body:**
@@ -93,7 +103,12 @@
 //!
 //! ```txt
 //! Content type: application/json
-//! Authorization: token <access_token>
+//! ```
+//!
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
 //! ```
 //!
 //! **Body:**
@@ -125,13 +140,7 @@
 //!
 //! #### Get questions for a presentation.
 //!
-//! **Endpoint:** `/questions-presentation`
-//!
-//! **Parameters:**
-//!
-//! ```txt
-//! presentation_id: <id>
-//! ```
+//! **Endpoint:** `/questions-presentation/{presentation_id}`
 //!
 //! **Method:** GET
 //!
@@ -157,7 +166,11 @@
 //!
 //! ```txt
 //! Content type: application/json
-//! Authorization: token <access_token>
+//! ```
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
 //! ```
 //!
 //! **Body:**
@@ -189,13 +202,7 @@
 //!
 //! #### Get options for a question
 //!
-//! **Endpoint:** `/options-question`
-//!
-//! **Parameters:**
-//!
-//! ```txt
-//! question_id: <id>
-//! ```
+//! **Endpoint:** `/options-question/{question_id}`
 //!
 //! **Method:** GET
 //!
@@ -229,13 +236,7 @@
 //!
 //! #### Get answers for an option
 //!
-//! **Endpoint:** `/answers-option`
-//!
-//! **Parameters:**
-//!
-//! ```txt
-//! option_id: <id>
-//! ```
+//! **Endpoint:** `/answers-option/{option_id}`
 //!
 //! **Method:** GET
 //!
@@ -257,6 +258,28 @@
 //!     }
 //! ]
 //! ```
+//!
+//! #### Check if a request is authenticated.
+//!
+//! If the authenticating cookie is not passed, or is not valid, then it will return false.
+//!
+//! **Endpoint:** `/is-logged-in`
+//!
+//! **Method:** GET
+//!
+//! **Cookies:**
+//!
+//! ```txt
+//! auth-cookie: <cookie_value>
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!     "result": false,
+//! }
+//! ```
 
 extern crate chrono;
 extern crate env_logger;
@@ -265,34 +288,25 @@ extern crate serde_json;
 #[macro_use]
 extern crate diesel;
 extern crate actix;
+extern crate actix_cors;
+extern crate actix_http;
+extern crate actix_session;
 extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
 extern crate futures;
+extern crate rand;
 extern crate serde;
 extern crate serde_derive;
 extern crate time;
 
-use actix_web::middleware::cors::Cors;
-use actix_web::middleware::session::{CookieSessionBackend, SessionStorage};
-use actix_web::{
-    actix::{Actor, Addr, SyncArbiter, SyncContext},
-    http::{header, Method},
-    middleware::Logger,
-    App,
-};
 use diesel::{
     mysql::MysqlConnection,
     r2d2::{ConnectionManager, Pool},
 };
-use dotenv::dotenv;
-use middleware::GitHubUserId;
-use std::env;
-use time::Duration;
 
 pub mod answers;
 pub mod error;
-pub mod github_access_token;
 pub mod helpers;
 pub mod middleware;
 pub mod models;
@@ -301,100 +315,8 @@ pub mod presentations;
 pub mod questions;
 pub mod schema;
 pub mod session;
+pub mod web_socket;
+pub mod web_socket_server;
 
-const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
-const SAFE_PATHS: [&str; 8] = [
-    "/gh-access-token",
-    "/answers/{id}",
-    "/presentations/{id}",
-    "/questions/{id}",
-    "/questions-presentation",
-    "/options/{id}",
-    "/options-question",
-    "/answers-option",
-];
-
-/// Database execution actor.
-pub struct DbExecutor(pub Pool<ConnectionManager<MysqlConnection>>);
-
-impl Actor for DbExecutor {
-    type Context = SyncContext<Self>;
-}
-
-pub struct AppState {
-    db: Addr<DbExecutor>,
-}
-
-pub fn create_app() -> App<AppState> {
-    dotenv().ok();
-    env_logger::init();
-
-    let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
-    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
-
-    let pool = Pool::builder()
-        .build(manager)
-        .expect("Failed to create pool.");
-
-    let addr = SyncArbiter::start(3, move || DbExecutor(pool.clone()));
-
-    App::with_state(AppState { db: addr.clone() })
-        .middleware(Logger::default())
-        .middleware(SessionStorage::new(
-            CookieSessionBackend::signed(&[0; 32])
-                .secure(false)
-                .max_age(Duration::days(1)),
-        ))
-        .middleware(GitHubUserId::default())
-        .middleware(
-            Cors::build()
-                .allowed_headers(vec![
-                    header::AUTHORIZATION,
-                    header::ACCEPT,
-                    header::CONTENT_TYPE,
-                ])
-                .allowed_methods(vec![Method::GET, Method::POST])
-                .allowed_origin(&front_end_base_url)
-                .finish(),
-        )
-        .resource("/answers", |r| {
-            r.method(Method::POST).with_async(answers::post)
-        })
-        .resource("/answers/{id}", |r| {
-            r.method(Method::GET).with_async(answers::get)
-        })
-        .resource("/logout", |r| r.method(Method::GET).f(session::logout))
-        .resource("/presentations", |r| {
-            r.method(Method::POST).with_async(presentations::post)
-        })
-        .resource("/presentations/{id}", |r| {
-            r.method(Method::GET).with_async(presentations::get)
-        })
-        .resource("/questions", |r| {
-            r.method(Method::POST).with_async(questions::post)
-        })
-        .resource("/questions/{id}", |r| {
-            r.method(Method::GET).with_async(questions::get)
-        })
-        .resource("/questions-presentation", |r| {
-            r.method(Method::GET)
-                .with_async(questions::get_by_presentation)
-        })
-        .resource("/options", |r| {
-            r.method(Method::POST).with_async(options::post)
-        })
-        .resource("/options/{id}", |r| {
-            r.method(Method::GET).with_async(options::get)
-        })
-        .resource("/options-question", |r| {
-            r.method(Method::GET).with_async(options::get_by_question)
-        })
-        .resource("/gh-access-token", |r| {
-            r.method(Method::GET)
-                .with_async(github_access_token::get_access_token)
-        })
-        .resource("/answers-option", |r| {
-            r.method(Method::GET).with_async(answers::get_by_option)
-        })
-}
+pub const GH_USER_SESSION_ID_KEY: &str = "gh_user_id";
+pub type DbPool = Pool<ConnectionManager<MysqlConnection>>;

@@ -1,13 +1,14 @@
+use crate::schema::answers;
+use crate::schema::options;
+use crate::schema::presentations;
+use crate::schema::questions;
+use crate::schema::users;
 use chrono::NaiveDateTime;
 use diesel::Insertable;
 use diesel::Queryable;
-use schema::answers;
-use schema::options;
-use schema::presentations;
-use schema::questions;
 use serde_derive::*;
 
-#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations)]
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Associations, Debug)]
 #[belongs_to(Presentation, foreign_key = "presentation_id")]
 #[table_name = "questions"]
 pub struct Questions {
@@ -227,4 +228,12 @@ pub struct GetOptionsByQuestion {
 #[table_name = "answers"]
 pub struct GetAnswersByOption {
     pub option_id: i32,
+}
+
+#[derive(Queryable, Serialize, Deserialize, Identifiable, Debug)]
+#[table_name = "users"]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub created: NaiveDateTime,
 }

@@ -1,55 +1,41 @@
-use actix_web::actix::{Handler, Message};
-use actix_web::middleware::session::RequestSession;
+use crate::models::{NewPresentation, Presentation, PresentationInput};
+use crate::DbPool;
+
+use crate::session::get_user_by_name;
+use actix_identity::Identity;
+use actix_web::web::{block, Data, Json, Path};
 use actix_web::Error;
-use actix_web::{AsyncResponder, Path};
-use actix_web::{HttpRequest, HttpResponse, Json, State};
+use actix_web::HttpResponse;
+use actix_web::{get, post};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
-use futures::Future;
-use futures::IntoFuture;
-use middleware::GitHubUserId;
-use models::{GetPresentation, NewPresentation, Presentation, PresentationInput};
-use {error, DbExecutor};
-use {AppState, GH_USER_SESSION_ID_KEY};
 
-impl Message for NewPresentation {
-    type Result = Result<(), error::Db>;
+fn new_presentation(
+    data: NewPresentation,
+    connection: &MysqlConnection,
+) -> Result<(), DieselError> {
+    use crate::schema::presentations::dsl::presentations;
+
+    diesel::insert_into(presentations)
+        .values(data)
+        .execute(connection)
+        .expect("Error saving the presentation");
+
+    Ok(())
 }
 
-impl Handler<NewPresentation> for DbExecutor {
-    type Result = Result<(), error::Db>;
+fn get_presentation(
+    presentation_id: i32,
+    connection: &MysqlConnection,
+) -> Result<Presentation, DieselError> {
+    use crate::schema::presentations::dsl::{id, presentations};
 
-    fn handle(&mut self, msg: NewPresentation, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::presentations::dsl::presentations;
+    let result: Presentation = presentations
+        .filter(id.eq(presentation_id))
+        .first(connection)?;
 
-        let connection: &MysqlConnection = &self.0.get().unwrap();
-
-        diesel::insert_into(presentations)
-            .values(&msg)
-            .execute(connection)
-            .expect("Error saving the presentation");
-
-        Ok(())
-    }
-}
-
-impl Message for GetPresentation {
-    type Result = Result<Presentation, DieselError>;
-}
-
-impl Handler<GetPresentation> for DbExecutor {
-    type Result = Result<Presentation, DieselError>;
-
-    fn handle(&mut self, msg: GetPresentation, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::presentations::dsl::{id, presentations};
-
-        let connection: &MysqlConnection = &self.0.get().unwrap();
-
-        let result: Presentation = presentations.filter(id.eq(&msg.0)).first(connection)?;
-
-        Ok(result)
-    }
+    Ok(result)
 }
 
 /// `/presentations` POST
@@ -57,7 +43,10 @@ impl Handler<GetPresentation> for DbExecutor {
 /// Headers:
 ///
 /// Content type: application/json
-/// Authorization: token <access_token>
+///
+/// Cookies:
+///
+/// auth-cookie: <cookie_value>
 ///
 /// Body:
 /// ```json
@@ -67,35 +56,37 @@ impl Handler<GetPresentation> for DbExecutor {
 /// ```
 ///
 /// Response: 200 OK
-pub fn post(
+#[post("/presentations")]
+pub async fn post(
+    pool: Data<DbPool>,
     data: Json<PresentationInput>,
-    state: State<AppState>,
-    req: HttpRequest<AppState>,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let gh_user_id_session = req
-        .session()
-        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
-        .into_future();
+    id: Identity,
+) -> Result<HttpResponse, Error> {
+    if let Some(user_name) = id.identity() {
+        let connection = pool.get().expect("Could not get database connection.");
 
-    let now = Utc::now();
+        let user = block(move || get_user_by_name(user_name, &connection))
+            .await
+            .map_err(|_| {
+                HttpResponse::InternalServerError().body("Could not locate user by name.")
+            })?;
 
-    gh_user_id_session
-        .from_err()
-        .and_then(move |gh_user_id| {
-            let input = data.into_inner();
-            let new_presentation =
-                NewPresentation::new(input.title, gh_user_id.unwrap().id, now.naive_utc());
+        let now = Utc::now();
+        let input = data.into_inner();
+        let record = NewPresentation::new(input.title, user.id, now.naive_utc());
+        // TODO: Try not to retrieve the connection again.
+        let connection = pool.get().expect("Unable to get database connection.");
 
-            state
-                .db
-                .send(new_presentation)
-                .from_err()
-                .and_then(|response| match response {
-                    Ok(_) => Ok(HttpResponse::Ok().finish()),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-                })
-        })
-        .responder()
+        block(move || new_presentation(record, &connection))
+            .await
+            .map_err(|_| {
+                HttpResponse::InternalServerError().body("Could not create presentation.")
+            })?;
+
+        Ok(HttpResponse::Ok().finish())
+    } else {
+        Ok(HttpResponse::BadRequest().body("Could not identify the user."))
+    }
 }
 
 /// `/presentations/{id}` GET
@@ -109,18 +100,14 @@ pub fn post(
 ///    "created": "2019-11-01T14:30:30"
 /// }
 /// ```
-pub fn get(
-    data: Path<GetPresentation>,
-    req: HttpRequest<AppState>,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    req.state()
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+#[get("/presentations/{id}")]
+pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("Unable to get database connection.");
+    let presentation_id = data.into_inner();
+
+    let result = block(move || get_presentation(presentation_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(result))
 }

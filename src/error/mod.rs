@@ -1,4 +1,5 @@
 use crate::failure::Fail;
+use actix_http::ResponseBuilder;
 use actix_web::http::StatusCode;
 use actix_web::{error::ResponseError, HttpResponse};
 use std::fmt::{Display, Formatter, Result};
@@ -27,9 +28,13 @@ pub enum Oauth {
 }
 
 impl ResponseError for Oauth {
-    fn error_response(&self) -> HttpResponse {
+    fn status_code(&self) -> StatusCode {
         match *self {
-            Oauth::BadRequest => HttpResponse::new(StatusCode::BAD_REQUEST),
+            Oauth::BadRequest => StatusCode::BAD_REQUEST,
         }
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        ResponseBuilder::new(self.status_code()).body(self.to_string())
     }
 }

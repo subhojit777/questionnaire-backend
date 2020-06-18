@@ -1,79 +1,45 @@
-use actix::{Handler, Message};
-use actix_web::middleware::session::RequestSession;
-use actix_web::{AsyncResponder, Path};
-use actix_web::{Error, Query};
-use actix_web::{HttpRequest, HttpResponse, Json, State};
+use crate::models::{NewOption, NewOptionJson, Option};
+use crate::DbPool;
+
+use crate::session::get_user_by_name;
+use actix_identity::Identity;
+use actix_web::web::{block, Data, Json, Path};
+use actix_web::Error;
+use actix_web::HttpResponse;
+use actix_web::{get, post};
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::result::Error as DieselError;
 use diesel::MysqlConnection;
-use futures::future::IntoFuture;
-use futures::Future;
-use middleware::GitHubUserId;
-use models::{GetOption, GetOptionsByQuestion, NewOption, NewOptionJson, Option};
-use GH_USER_SESSION_ID_KEY;
-use {AppState, DbExecutor};
 
-impl Message for NewOption {
-    type Result = Result<(), DieselError>;
+fn new_option(record: NewOption, connection: &MysqlConnection) -> Result<(), DieselError> {
+    use crate::schema::options::dsl::options;
+
+    diesel::insert_into(options)
+        .values(&record)
+        .execute(connection)
+        .expect("Error saving the option.");
+
+    Ok(())
 }
 
-impl Handler<NewOption> for DbExecutor {
-    type Result = Result<(), DieselError>;
+fn get_option(option_id: i32, connection: &MysqlConnection) -> Result<Option, DieselError> {
+    use crate::schema::options::dsl::{id, options};
 
-    fn handle(&mut self, msg: NewOption, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::options::dsl::options;
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection");
-
-        diesel::insert_into(options)
-            .values(&msg)
-            .execute(connection)
-            .expect("Error saving the option.");
-
-        Ok(())
-    }
+    options.filter(id.eq(option_id)).first::<Option>(connection)
 }
 
-impl Message for GetOption {
-    type Result = Result<Option, DieselError>;
-}
+fn get_option_by_question_id(
+    id: i32,
+    connection: &MysqlConnection,
+) -> Result<Vec<Option>, DieselError> {
+    use crate::schema::options;
+    use crate::schema::options::dsl::question_id;
 
-impl Handler<GetOption> for DbExecutor {
-    type Result = Result<Option, DieselError>;
+    let options = options::table.filter(question_id.eq(id)).load(connection)?;
 
-    fn handle(&mut self, msg: GetOption, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::options::dsl::{id, options};
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection.");
-
-        let result: Option = options.filter(id.eq(&msg.0)).first(connection)?;
-
-        Ok(result)
-    }
-}
-
-impl Message for GetOptionsByQuestion {
-    type Result = Result<Vec<Option>, DieselError>;
-}
-
-impl Handler<GetOptionsByQuestion> for DbExecutor {
-    type Result = Result<Vec<Option>, DieselError>;
-
-    fn handle(&mut self, msg: GetOptionsByQuestion, _ctx: &mut Self::Context) -> Self::Result {
-        use schema::options;
-        use schema::options::dsl::question_id;
-
-        let connection: &MysqlConnection =
-            &self.0.get().expect("Unable to get database connection.");
-
-        let options: Vec<Option> = options::table
-            .filter(question_id.eq(msg.question_id))
-            .load(connection)?;
-
-        Ok(options)
-    }
+    Ok(options)
 }
 
 /// `/options` POST
@@ -81,7 +47,10 @@ impl Handler<GetOptionsByQuestion> for DbExecutor {
 /// Headers:
 ///
 /// Content type: application/json
-/// Authorization: token <access_token>
+///
+/// Cookies:
+///
+/// auth-cookie: <cookie_value>
 ///
 /// Body:
 /// ```json
@@ -92,39 +61,36 @@ impl Handler<GetOptionsByQuestion> for DbExecutor {
 /// ```
 ///
 /// Response: 200 OK
-pub fn post(
+#[post("/options")]
+pub async fn post(
+    pool: Data<DbPool>,
     data: Json<NewOptionJson>,
-    state: State<AppState>,
-    req: HttpRequest<AppState>,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let gh_user_id_session = req
-        .session()
-        .get::<GitHubUserId>(GH_USER_SESSION_ID_KEY)
-        .into_future();
+    id: Identity,
+) -> Result<HttpResponse, Error> {
+    if let Some(name) = id.identity() {
+        let connection = pool.get().expect("Could not get database connection.");
 
-    let now = Utc::now();
+        let user = block(move || get_user_by_name(name, &connection))
+            .await
+            .map_err(|_| {
+                HttpResponse::InternalServerError()
+                    .body("Something went wrong while retrieving the user.")
+            })?;
 
-    gh_user_id_session
-        .from_err()
-        .and_then(move |gh_user_id| {
-            let input = data.into_inner();
-            let new_option = NewOption::new(
-                input.data,
-                gh_user_id.unwrap().id,
-                input.question_id,
-                now.naive_utc(),
-            );
+        let input = data.into_inner();
+        let now = Utc::now();
+        // TODO: Try not to retrieve the connection again.
+        let connection = pool.get().expect("unable to get database connection.");
+        let record = NewOption::new(input.data, user.id, input.question_id, now.naive_utc());
 
-            state
-                .db
-                .send(new_option)
-                .from_err()
-                .and_then(|response| match response {
-                    Ok(_) => Ok(HttpResponse::Ok().finish()),
-                    Err(_) => Ok(HttpResponse::InternalServerError().into()),
-                })
-        })
-        .responder()
+        block(move || new_option(record, &connection))
+            .await
+            .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+        Ok(HttpResponse::Ok().finish())
+    } else {
+        Ok(HttpResponse::BadRequest().body("Could not identify user."))
+    }
 }
 
 /// `/options/{id}` GET
@@ -139,31 +105,21 @@ pub fn post(
 ///    "created": "2019-06-19T03:40:50"
 /// }
 /// ```
-pub fn get(
-    data: Path<GetOption>,
-    req: HttpRequest<AppState>,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let state: &AppState = req.state();
+#[get("/options/{id}")]
+pub async fn get(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("unable to get database connection.");
+    let option_id = data.into_inner();
 
-    state
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+    let result = block(move || get_option(option_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(result))
 }
 
 /// Returns options for a question.
 ///
-/// `/options-question` GET
-///
-/// Parameters:
-///
-/// question_id: {id}
+/// `/options-question/{question_id}` GET
 ///
 /// Response:
 /// ```json
@@ -177,20 +133,14 @@ pub fn get(
 ///     }
 /// ]
 /// ```
-pub fn get_by_question(
-    data: Query<GetOptionsByQuestion>,
-    req: HttpRequest<AppState>,
-) -> Box<dyn Future<Item = HttpResponse, Error = Error>> {
-    let state: &AppState = req.state();
+#[get("/options-question/{id}")]
+pub async fn get_by_question(pool: Data<DbPool>, data: Path<i32>) -> Result<HttpResponse, Error> {
+    let connection = pool.get().expect("unable to get database connection.");
+    let question_id = data.into_inner();
 
-    state
-        .db
-        .send(data.into_inner())
-        .from_err()
-        .and_then(|response| match response {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(DieselError::NotFound) => Ok(HttpResponse::NotFound().into()),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+    let results = block(move || get_option_by_question_id(question_id, &connection))
+        .await
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    Ok(HttpResponse::Ok().json(results))
 }
