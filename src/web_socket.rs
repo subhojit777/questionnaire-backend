@@ -35,6 +35,29 @@ struct WebSocketSession {
     db_connection: PooledDatabaseConnection,
 }
 
+trait Event {
+    fn parse_request(data: &str) -> Self;
+
+    fn send_response(&self) -> String;
+}
+
+#[derive(Deserialize)]
+struct NavigateEvent {
+    presentation_id: i32,
+    question_index: usize,
+    direction: Direction,
+}
+
+impl Event for NavigateEvent {
+    fn parse_request(data: &str) -> Self {
+        serde_json::from_str(data).expect("Unable to parse navigation request.")
+    }
+
+    fn send_response(&self) -> String {
+        unimplemented!();
+    }
+}
+
 #[derive(Deserialize)]
 struct WebSocketRequest {
     presentation_id: i32,
