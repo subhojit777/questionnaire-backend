@@ -18,6 +18,7 @@ use diesel::r2d2::PooledConnection;
 use diesel::MysqlConnection;
 use serde::Deserialize;
 use serde::Serialize;
+use serde_json::json;
 use std::time::Instant;
 
 type PooledDatabaseConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
@@ -38,7 +39,7 @@ struct WebSocketSession {
 trait Event {
     fn parse_request(data: &str) -> Self;
 
-    fn send_response(&self) -> String;
+    fn send_response(&self, connection: &PooledDatabaseConnection) -> String;
 }
 
 #[derive(Deserialize)]
@@ -53,8 +54,33 @@ impl Event for NavigateEvent {
         serde_json::from_str(data).expect("Unable to parse navigation request.")
     }
 
-    fn send_response(&self) -> String {
-        unimplemented!();
+    fn send_response(&self, connection: &PooledDatabaseConnection) -> String {
+        let questions = get_question_by_presentation(self.presentation_id, connection)
+            .expect("Unable to retrieve the questions for the presentation.");
+
+        let mut new_question_index: usize = 0;
+        let num_questions = questions.len();
+
+        match self.direction {
+            Direction::Forward => {
+                let next_question_index = self.question_index + 1;
+                if next_question_index < num_questions
+                    && questions.get(next_question_index).is_some()
+                {
+                    new_question_index = next_question_index;
+                }
+            }
+            Direction::Backward => {
+                if self.question_index > 0 && questions.get(self.question_index).is_some() {
+                    new_question_index = self.question_index - 1;
+                }
+            }
+        }
+        let response = json!({
+            "new_question_index": new_question_index,
+        });
+
+        response.to_string()
     }
 }
 
