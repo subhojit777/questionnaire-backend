@@ -39,7 +39,7 @@ struct WebSocketSession {
 trait Event {
     fn parse_request(data: &str) -> Self;
 
-    fn send_response(&self, connection: &PooledDatabaseConnection) -> String;
+    fn get_response(&self, connection: &PooledDatabaseConnection) -> String;
 }
 
 #[derive(Deserialize)]
@@ -54,7 +54,7 @@ impl Event for NavigateEvent {
         serde_json::from_str(data).expect("Unable to parse navigation request.")
     }
 
-    fn send_response(&self, connection: &PooledDatabaseConnection) -> String {
+    fn get_response(&self, connection: &PooledDatabaseConnection) -> String {
         let questions = get_question_by_presentation(self.presentation_id, connection)
             .expect("Unable to retrieve the questions for the presentation.");
 
