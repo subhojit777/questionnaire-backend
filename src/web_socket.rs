@@ -17,7 +17,6 @@ use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::PooledConnection;
 use diesel::MysqlConnection;
 use serde::Deserialize;
-use serde::Serialize;
 use serde_json::json;
 use std::time::Instant;
 
@@ -27,6 +26,11 @@ type PooledDatabaseConnection = PooledConnection<ConnectionManager<MysqlConnecti
 enum Direction {
     Forward,
     Backward,
+}
+
+#[derive(Deserialize)]
+enum Event {
+    Navigate,
 }
 
 struct WebSocketSession {
@@ -76,7 +80,7 @@ impl HandleWebSocketTx for NavigateEvent {
                 }
             }
         }
-        let response = json!({
+        let response: serde_json::Value = json!({
             "new_question_index": new_question_index,
         });
 
@@ -86,14 +90,8 @@ impl HandleWebSocketTx for NavigateEvent {
 
 #[derive(Deserialize)]
 struct WebSocketRequest {
-    presentation_id: i32,
-    question_index: usize,
-    direction: Direction,
-}
-
-#[derive(Serialize)]
-struct WebSocketResponse {
-    new_question_index: usize,
+    event: Event,
+    data: String,
 }
 
 impl WebSocketSession {
@@ -166,32 +164,16 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocketSession {
                 let message: WebSocketRequest = serde_json::from_str(&text)
                     .expect("Unable to parse the text message from web socket");
 
-                let questions = get_question_by_presentation(message.presentation_id, connection)
-                    .expect("Unable to retrieve the questions for the presentation.");
-
-                let mut new_question_index: usize = 0;
-                let num_questions = questions.len();
-
-                match message.direction {
-                    Direction::Forward => {
-                        let next_question_index = message.question_index + 1;
-                        if next_question_index < num_questions
-                            && questions.get(next_question_index).is_some()
-                        {
-                            new_question_index = next_question_index;
-                        }
-                    }
-                    Direction::Backward => {
-                        if message.question_index > 0
-                            && questions.get(message.question_index).is_some()
-                        {
-                            new_question_index = message.question_index - 1;
-                        }
+                match message.event {
+                    Event::Navigate => {
+                        let request_data: NavigateEvent =
+                            HandleWebSocketTx::parse_request(&message.data);
+                        let response = request_data.get_response(connection);
+                        self.send_msg(
+                            serde_json::to_string(&response).expect("Could not parse to JSON."),
+                        );
                     }
                 }
-
-                let response = WebSocketResponse { new_question_index };
-                self.send_msg(serde_json::to_string(&response).expect("Could not parse to JSON."));
             }
             Ok(ws::Message::Binary(_)) => println!("Unexpected binary"),
             _ => ctx.stop(),
