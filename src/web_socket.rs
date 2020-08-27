@@ -36,7 +36,7 @@ struct WebSocketSession {
     db_connection: PooledDatabaseConnection,
 }
 
-trait Event {
+trait HandleWebSocketTx {
     fn parse_request(data: &str) -> Self;
 
     fn get_response(&self, connection: &PooledDatabaseConnection) -> String;
@@ -49,7 +49,7 @@ struct NavigateEvent {
     direction: Direction,
 }
 
-impl Event for NavigateEvent {
+impl HandleWebSocketTx for NavigateEvent {
     fn parse_request(data: &str) -> Self {
         serde_json::from_str(data).expect("Unable to parse navigation request.")
     }
