@@ -16,8 +16,7 @@ use actix_web_actors::ws::WebsocketContext;
 use diesel::r2d2::ConnectionManager;
 use diesel::r2d2::PooledConnection;
 use diesel::MysqlConnection;
-use serde::Deserialize;
-use serde_json::json;
+use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
 type PooledDatabaseConnection = PooledConnection<ConnectionManager<MysqlConnection>>;
@@ -40,25 +39,30 @@ struct WebSocketSession {
     db_connection: PooledDatabaseConnection,
 }
 
-trait HandleWebSocketTx {
+trait HandleWebSocketTx<T> {
     fn parse_request(data: &str) -> Self;
 
-    fn get_response(&self, connection: &PooledDatabaseConnection) -> String;
+    fn get_response(&self, connection: &PooledDatabaseConnection) -> T;
 }
 
 #[derive(Deserialize)]
-struct NavigateEvent {
+struct NavigateEventRequest {
     presentation_id: i32,
     question_index: usize,
     direction: Direction,
 }
 
-impl HandleWebSocketTx for NavigateEvent {
+#[derive(Serialize)]
+struct NavigateEventResponse {
+    new_question_index: usize,
+}
+
+impl HandleWebSocketTx<NavigateEventResponse> for NavigateEventRequest {
     fn parse_request(data: &str) -> Self {
         serde_json::from_str(data).expect("Unable to parse navigation request.")
     }
 
-    fn get_response(&self, connection: &PooledDatabaseConnection) -> String {
+    fn get_response(&self, connection: &PooledDatabaseConnection) -> NavigateEventResponse {
         let questions = get_question_by_presentation(self.presentation_id, connection)
             .expect("Unable to retrieve the questions for the presentation.");
 
@@ -80,11 +84,10 @@ impl HandleWebSocketTx for NavigateEvent {
                 }
             }
         }
-        let response: serde_json::Value = json!({
-            "new_question_index": new_question_index,
-        });
 
-        response.to_string()
+        NavigateEventResponse {
+            new_question_index: new_question_index,
+        }
     }
 }
 
@@ -166,11 +169,11 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocketSession {
 
                 match message.event {
                     Event::Navigate => {
-                        let request_data: NavigateEvent =
+                        let request_data: NavigateEventRequest =
                             HandleWebSocketTx::parse_request(&message.data);
                         let response = request_data.get_response(connection);
                         self.send_msg(
-                            serde_json::to_string(&response).expect("Could not parse to JSON."),
+                            serde_json::to_string(&response).expect("Unable to parse response"),
                         );
                     }
                 }
