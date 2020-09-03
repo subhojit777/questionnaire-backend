@@ -27,7 +27,7 @@ enum Direction {
     Backward,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 enum Event {
     Navigate,
 }
@@ -55,6 +55,7 @@ struct NavigateEventRequest {
 #[derive(Serialize)]
 struct NavigateEventResponse {
     new_question_index: usize,
+    event: Event,
 }
 
 impl HandleWebSocketTx<NavigateEventResponse> for NavigateEventRequest {
@@ -87,6 +88,7 @@ impl HandleWebSocketTx<NavigateEventResponse> for NavigateEventRequest {
 
         NavigateEventResponse {
             new_question_index: new_question_index,
+            event: Event::Navigate,
         }
     }
 }
