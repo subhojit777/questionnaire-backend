@@ -39,10 +39,10 @@ struct WebSocketSession {
     db_connection: PooledDatabaseConnection,
 }
 
-trait HandleWebSocketTx {
+trait HandleWebSocketTx<T> {
     fn parse_request(data: &str) -> Self;
 
-    fn get_response(&self, connection: &PooledDatabaseConnection) -> WebSocketResponse;
+    fn get_response(&self, connection: &PooledDatabaseConnection) -> WebSocketResponse<T>;
 }
 
 #[derive(Deserialize)]
@@ -58,9 +58,9 @@ struct NavigateEventResponse {
 }
 
 #[derive(Serialize)]
-struct WebSocketResponse {
+struct WebSocketResponse<T> {
     event: Event,
-    data: String,
+    data: T,
 }
 
 #[derive(Deserialize)]
@@ -69,12 +69,15 @@ struct WebSocketRequest {
     data: String,
 }
 
-impl HandleWebSocketTx for NavigateEventRequest {
+impl HandleWebSocketTx<NavigateEventResponse> for NavigateEventRequest {
     fn parse_request(data: &str) -> Self {
         serde_json::from_str(data).expect("Unable to parse navigation request.")
     }
 
-    fn get_response(&self, connection: &PooledDatabaseConnection) -> WebSocketResponse {
+    fn get_response(
+        &self,
+        connection: &PooledDatabaseConnection,
+    ) -> WebSocketResponse<NavigateEventResponse> {
         let questions = get_question_by_presentation(self.presentation_id, connection)
             .expect("Unable to retrieve the questions for the presentation.");
 
@@ -103,7 +106,7 @@ impl HandleWebSocketTx for NavigateEventRequest {
 
         WebSocketResponse {
             event: Event::Navigate,
-            data: serde_json::to_string(&response).expect("Unable to parse response into string."),
+            data: response,
         }
     }
 }
