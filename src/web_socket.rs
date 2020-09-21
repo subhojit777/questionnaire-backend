@@ -104,6 +104,9 @@ impl HandleWebSocketTx<NavigateEventResponse> for NavigateEventRequest {
             new_question_index: new_question_index,
         };
 
+        // TODO: Send this as data.
+        let response: &str = "something";
+
         WebSocketResponse {
             event: Event::Navigate,
             data: response,
