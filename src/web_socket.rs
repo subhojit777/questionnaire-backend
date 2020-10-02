@@ -30,6 +30,7 @@ enum Direction {
 #[derive(Deserialize, Serialize)]
 enum Event {
     Navigate,
+    AnswersCreate,
 }
 
 struct WebSocketSession {
