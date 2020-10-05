@@ -1,3 +1,4 @@
+use crate::answers::new_answer;
 use crate::questions::get_question_by_presentation;
 use crate::web_socket_server::JoinSession;
 use crate::web_socket_server::Message;
@@ -53,10 +54,19 @@ struct NavigateEventRequest {
     direction: Direction,
 }
 
+#[derive(Deserialize)]
+struct AnswersCreateEventRequest {
+    option_id: i32,
+    user_id: i32,
+}
+
 #[derive(Serialize)]
 struct NavigateEventResponse {
     new_question_index: usize,
 }
+
+#[derive(Serialize)]
+struct AnswersCreateEventResponse;
 
 #[derive(Serialize)]
 struct WebSocketResponse<T> {
@@ -108,6 +118,25 @@ impl HandleWebSocketTx<NavigateEventResponse> for NavigateEventRequest {
         WebSocketResponse {
             event: Event::Navigate,
             data: response,
+        }
+    }
+}
+
+impl HandleWebSocketTx<AnswersCreateEventResponse> for AnswersCreateEventRequest {
+    fn parse_request(data: &str) -> Self {
+        serde_json::from_str(data).expect("Unable to parse navigation request.")
+    }
+
+    fn get_response(
+        &self,
+        connection: &PooledDatabaseConnection,
+    ) -> WebSocketResponse<AnswersCreateEventResponse> {
+        new_answer(self.option_id, self.user_id, connection)
+            .expect("Unable to create a new answer. Check logs for more details.");
+
+        WebSocketResponse {
+            event: Event::AnswersCreate,
+            data: AnswersCreateEventResponse,
         }
     }
 }
@@ -189,6 +218,15 @@ impl StreamHandler<Result<ws::Message, ProtocolError>> for WebSocketSession {
                         let response = request_data.get_response(connection);
                         self.send_msg(
                             serde_json::to_string(&response).expect("Unable to parse response"),
+                        );
+                    }
+                    Event::AnswersCreate => {
+                        let request_data: AnswersCreateEventRequest =
+                            HandleWebSocketTx::parse_request(&message.data);
+                        let response = request_data.get_response(connection);
+                        self.send_msg(
+                            serde_json::to_string(&response)
+                                .expect("Unable to parse answers create response"),
                         );
                     }
                 }
