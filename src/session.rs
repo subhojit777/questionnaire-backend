@@ -38,7 +38,9 @@ pub fn logout(id: Identity) -> HttpResponse {
 ///
 /// ```json
 /// {
+///    "id": 42,
 ///    "name": "agent 42",
+///    "created": "2019-11-01T14:30:30",
 /// }
 /// ```
 ///
@@ -53,13 +55,13 @@ pub async fn login(
     let connection = pool.get().expect("Could not get database connection");
     let user_name = input.name.clone();
 
-    block(move || get_user_by_name(user_name, &connection))
+    let user: User = block(move || get_user_by_name(user_name, &connection))
         .await
         .map_err(|_| HttpResponse::InternalServerError().body("Something went wrong during login."))
         .expect("Could not locate user by name during login.");
 
-    id.remember(input.name);
-    Ok(HttpResponse::Ok().finish())
+    id.remember(user.id.to_string());
+    Ok(HttpResponse::Ok().json(user))
 }
 
 /// Checks if the request is authenticated.

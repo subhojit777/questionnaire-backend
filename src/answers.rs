@@ -11,7 +11,7 @@ use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 
-fn new_answer(
+pub fn new_answer(
     option_id: i32,
     user_id: i32,
     connection: &MysqlConnection,
