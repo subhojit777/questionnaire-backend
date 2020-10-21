@@ -1,0 +1,6 @@
+release:
+  command:
+    - cargo install diesel_cli
+    - diesel migration run
+run:
+  web: ./target/release/index
