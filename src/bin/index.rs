@@ -31,6 +31,7 @@ async fn main() -> std::io::Result<()> {
             .max_size(max_database_pool_size)
             .build(manager)
             .expect("Failed to create pool.");
+        dbg!(pool.max_size());
 
         App::new()
             .data(pool.clone())
