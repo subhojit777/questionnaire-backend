@@ -20,15 +20,9 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
-        let max_database_pool_size: u32 = env::var("MAX_DATABASE_POOL_SIZE")
-            .unwrap()
-            .as_str()
-            .parse::<u32>()
-            .unwrap();
         let manager = ConnectionManager::<MysqlConnection>::new(database_url);
 
         let pool = Pool::builder()
-            .max_size(max_database_pool_size)
             .build(manager)
             .expect("Failed to create pool.");
 
