@@ -7,6 +7,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
 use dotenv::dotenv;
 use questionnaire_rs::*;
+use std::convert::TryInto;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use std::env;
@@ -15,23 +16,18 @@ use std::env;
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
+
     let server_address = env::var("ADDRESS").expect("Server ADDRESS must be set.");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
+    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
+    let pool = Pool::builder()
+        .max_size(num_cpus::get().try_into().unwrap())
+        .build(manager)
+        .expect("Failed to create pool.");
+    dbg!(pool.max_size());
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
-        let max_database_pool_size: u32 = env::var("MAX_DATABASE_POOL_SIZE")
-            .unwrap()
-            .as_str()
-            .parse::<u32>()
-            .unwrap();
-        let manager = ConnectionManager::<MysqlConnection>::new(database_url);
-
-        let pool = Pool::builder()
-            .max_size(max_database_pool_size)
-            .build(manager)
-            .expect("Failed to create pool.");
-        dbg!(pool.max_size());
 
         App::new()
             .data(pool.clone())
