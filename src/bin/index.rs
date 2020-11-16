@@ -21,7 +21,7 @@ async fn main() -> std::io::Result<()> {
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
     let pool = Pool::builder()
-        .max_size(num_cpus::get().try_into().unwrap())
+        .max_size(2)
         .build(manager)
         .expect("Failed to create pool.");
     dbg!(pool.max_size());
