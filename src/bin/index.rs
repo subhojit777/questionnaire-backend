@@ -7,7 +7,6 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
 use dotenv::dotenv;
 use questionnaire_rs::*;
-use std::convert::TryInto;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use std::env;
@@ -18,6 +17,8 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let server_address = env::var("ADDRESS").expect("Server ADDRESS must be set.");
+    let server_port = env::var("PORT").unwrap_or_else(|port| port.to_string());
+    let complete_address = format!("{}:{}", server_address, server_port);
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
     let pool = Pool::builder()
@@ -59,7 +60,7 @@ async fn main() -> std::io::Result<()> {
             .service(session::is_logged_in)
             .service(web_socket::index)
     })
-    .bind(server_address)
+    .bind(complete_address)
     .unwrap()
     .run()
     .await
