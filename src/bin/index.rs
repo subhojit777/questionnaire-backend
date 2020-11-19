@@ -21,9 +21,9 @@ async fn main() -> std::io::Result<()> {
     let complete_address = format!("{}:{}", server_address, server_port);
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
     let max_db_pool_size = env::var("MAX_DATABASE_POOL_SIZE")
-        .unwrap_or_else(|max_size| max_size.to_string())
+        .unwrap_or_else(|_error| String::from("10"))
         .parse::<u32>()
-        .expect("Failed to conver max_db_pool_size to u32");
+        .expect("Failed to convert max_db_pool_size to u32");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
     let pool = Pool::builder()
         .max_size(max_db_pool_size)
