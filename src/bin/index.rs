@@ -6,9 +6,7 @@ use actix_web::HttpServer;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::MysqlConnection;
 use dotenv::dotenv;
-use num_cpus;
 use questionnaire_rs::*;
-use std::convert::TryInto;
 
 use actix_identity::{CookieIdentityPolicy, IdentityService};
 use std::env;
@@ -22,9 +20,13 @@ async fn main() -> std::io::Result<()> {
     let server_port = env::var("PORT").unwrap_or_else(|port| port.to_string());
     let complete_address = format!("{}:{}", server_address, server_port);
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
+    let max_db_pool_size = env::var("MAX_DATABASE_POOL_SIZE")
+        .unwrap_or_else(|max_size| max_size.to_string())
+        .parse::<u32>()
+        .expect("Failed to conver max_db_pool_size to u32");
     let manager = ConnectionManager::<MysqlConnection>::new(database_url);
     let pool = Pool::builder()
-        .max_size(num_cpus::get().try_into().unwrap())
+        .max_size(max_db_pool_size)
         .build(manager)
         .expect("Failed to create pool.");
 
