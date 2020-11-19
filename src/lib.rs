@@ -319,7 +319,6 @@ extern crate actix_web;
 extern crate dotenv;
 extern crate failure;
 extern crate futures;
-extern crate num_cpus;
 extern crate rand;
 extern crate serde;
 extern crate serde_derive;
