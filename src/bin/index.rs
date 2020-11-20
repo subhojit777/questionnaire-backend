@@ -15,16 +15,23 @@ use std::env;
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     env_logger::init();
+
     let server_address = env::var("ADDRESS").expect("Server ADDRESS must be set.");
+    let server_port = env::var("PORT").unwrap_or_else(|port| port.to_string());
+    let complete_address = format!("{}:{}", server_address, server_port);
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
+    let max_db_pool_size = env::var("MAX_DATABASE_POOL_SIZE")
+        .unwrap_or_else(|_error| String::from("10"))
+        .parse::<u32>()
+        .expect("Failed to convert max_db_pool_size to u32");
+    let manager = ConnectionManager::<MysqlConnection>::new(database_url);
+    let pool = Pool::builder()
+        .max_size(max_db_pool_size)
+        .build(manager)
+        .expect("Failed to create pool.");
 
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         let front_end_base_url = env::var("FRONT_END_BASE_URL").unwrap_or(String::from(""));
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set.");
-        let manager = ConnectionManager::<MysqlConnection>::new(database_url);
-
-        let pool = Pool::builder()
-            .build(manager)
-            .expect("Failed to create pool.");
 
         App::new()
             .data(pool.clone())
@@ -56,7 +63,7 @@ async fn main() -> std::io::Result<()> {
             .service(session::is_logged_in)
             .service(web_socket::index)
     })
-    .bind(server_address)
+    .bind(complete_address)
     .unwrap()
     .run()
     .await

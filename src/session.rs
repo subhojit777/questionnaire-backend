@@ -38,13 +38,18 @@ pub fn logout(id: Identity) -> HttpResponse {
 ///
 /// ```json
 /// {
-///    "id": 42,
 ///    "name": "agent 42",
-///    "created": "2019-11-01T14:30:30",
 /// }
 /// ```
 ///
-/// Response: 200 OK
+/// Response:
+/// ```json
+/// {
+///     "id": 9,
+///     "name": "agent 42",
+///     "created": "2020-11-18T03:30:22"
+/// }
+/// ```
 #[post("/login")]
 pub async fn login(
     data: Json<UserLogin>,

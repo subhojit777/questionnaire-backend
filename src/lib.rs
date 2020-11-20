@@ -259,6 +259,30 @@
 //! ]
 //! ```
 //!
+//! #### User login
+//!
+//! **Endpoint:** `/login`
+//!
+//! **Method:** POST
+//!
+//! **Body:**
+//!
+//! ```json
+//! {
+//!    "name": "agent 42",
+//! }
+//! ```
+//!
+//! **Response:**
+//!
+//! ```json
+//! {
+//!     "id": 9,
+//!     "name": "agent 42",
+//!     "created": "2020-11-18T03:30:22"
+//! }
+//! ```
+//!
 //! #### Check if a request is authenticated.
 //!
 //! If the authenticating cookie is not passed, or is not valid, then it will return false.
