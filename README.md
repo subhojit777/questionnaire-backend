@@ -2,21 +2,27 @@
 
 A real time crowd survey application.
 
-This repository makes the backend of the application.
+This repository makes the backend of the application. It provides REST API endpoints which you can access via any REST client.
+
+## Preqrequisites
+
+- [Rust](https://www.rust-lang.org/tools/install)
+- [MySQL](https://dev.mysql.com/downloads/mysql)
 
 ## Installation
-Make sure you have [Rust](https://www.rust-lang.org/tools/install) installed in your system.
 
 ```
 git clone https://github.com/subhojit777/questionnaire-rs.git
 cd questionnaire-rs
+cp .env.example .env
+# Replace the values in .env as necessary
+cargo install diesel_cli
+diesel migration run
 cargo build
 ```
 
-## Usage
-This provides REST API endpoints which you can access via any REST client.
+## Start the server
 
 ```
-# Start the server
 cargo run
 ```
