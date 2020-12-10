@@ -101,26 +101,6 @@ pub struct AnswerInput {
     pub option_id: i32,
 }
 
-/// The structure of the body of JSON request for retrieving the access token for a session code.
-#[derive(Serialize, Deserialize)]
-pub struct GHAccessTokenBody {
-    client_id: String,
-    client_secret: String,
-    code: String,
-    accept: String,
-}
-
-impl GHAccessTokenBody {
-    pub fn new(client_id: String, client_secret: String, code: String, accept: String) -> Self {
-        GHAccessTokenBody {
-            client_id,
-            client_secret,
-            code,
-            accept,
-        }
-    }
-}
-
 /// This defines an actor for retrieving answer from database by id.
 #[derive(Queryable, Deserialize)]
 pub struct GetAnswerById(pub i32);
