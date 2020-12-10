@@ -330,9 +330,6 @@ use diesel::{
 };
 
 pub mod answers;
-pub mod error;
-pub mod helpers;
-pub mod middleware;
 pub mod models;
 pub mod options;
 pub mod presentations;
