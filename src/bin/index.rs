@@ -1,6 +1,5 @@
 use actix_cors::Cors;
 
-use actix_http::cookie::SameSite;
 use actix_web::middleware::Logger;
 use actix_web::App;
 use actix_web::HttpServer;
@@ -40,8 +39,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
                     .name("auth-cookie")
-                    .secure(true)
-                    .same_site(SameSite::None),
+                    .secure(false),
             ))
             .wrap(
                 Cors::new()
