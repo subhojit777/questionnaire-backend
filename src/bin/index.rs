@@ -1,5 +1,7 @@
 use actix_cors::Cors;
 
+use actix_web::cookie::SameSite;
+use actix_web::http::HeaderName;
 use actix_web::middleware::Logger;
 use actix_web::App;
 use actix_web::HttpServer;
@@ -42,10 +44,9 @@ async fn main() -> std::io::Result<()> {
                     .secure(false),
             ))
             .wrap(
-                Cors::new()
+                Cors::default()
                     .allowed_origin(&front_end_base_url)
-                    .supports_credentials()
-                    .finish(),
+                    .supports_credentials(),
             )
             .service(answers::post)
             .service(answers::get)
