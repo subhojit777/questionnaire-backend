@@ -1,5 +1,7 @@
 use actix_cors::Cors;
 
+use actix_web::cookie::SameSite;
+use actix_web::http::header;
 use actix_web::middleware::Logger;
 use actix_web::App;
 use actix_web::HttpServer;
@@ -39,13 +41,19 @@ async fn main() -> std::io::Result<()> {
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(&[0; 32])
                     .name("auth-cookie")
-                    .secure(false),
+                    .same_site(SameSite::None)
+                    .secure(true),
             ))
             .wrap(
-                Cors::new()
+                Cors::default()
+                    .allowed_headers(vec![
+                        header::AUTHORIZATION,
+                        header::ACCEPT,
+                        header::CONTENT_TYPE,
+                    ])
+                    .allowed_methods(vec!["GET", "POST"])
                     .allowed_origin(&front_end_base_url)
-                    .supports_credentials()
-                    .finish(),
+                    .supports_credentials(),
             )
             .service(answers::post)
             .service(answers::get)
