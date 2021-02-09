@@ -2,7 +2,7 @@ use crate::DbPool;
 use actix_web::Error;
 
 use crate::models::{Answer, AnswerInput, NewAnswer};
-use crate::session::get_user_by_name;
+use crate::session::load_user_by_id;
 use actix_identity::Identity;
 use actix_web::web::{block, Data, Json, Path};
 use actix_web::HttpResponse;
@@ -52,13 +52,17 @@ pub async fn post(
     data: Json<AnswerInput>,
     id: Identity,
 ) -> Result<HttpResponse, Error> {
-    if let Some(name) = id.identity() {
+    if let Some(id) = id.identity() {
         let connection = pool.get().expect("Could not get database connection.");
 
-        let user = block(move || get_user_by_name(name, &connection))
+        let uid = id
+            .parse::<i32>()
+            .expect("Unable to convert user id to i32.");
+
+        let user = block(move || load_user_by_id(uid, &connection))
             .await
             .map_err(|_| {
-                HttpResponse::InternalServerError().body("Unable to retrieve user by name.")
+                HttpResponse::InternalServerError().body("Unable to retrieve user by id.")
             })?;
 
         // TODO: Try not to retrieve the connection again.

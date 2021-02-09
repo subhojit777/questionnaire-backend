@@ -126,3 +126,11 @@ pub fn create_user(name: String, connection: &MysqlConnection) -> Result<User, D
 
     Ok(new_user)
 }
+
+pub fn load_user_by_id(uid: i32, connection: &MysqlConnection) -> Result<User, DieselError> {
+    use crate::schema::users::dsl::users;
+
+    let result = users.find(uid).first::<User>(connection);
+
+    result
+}
